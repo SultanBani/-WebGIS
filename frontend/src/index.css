@@ -9,33 +9,38 @@
 body {
   margin: 0;
   padding: 0;
-  overflow: hidden; /* Prevent default scrolling */
-  background-color: #030f0a; /* Premium deep forest-black background */
-  color: #f8fafc;
+  background-color: #f4f6f5; /* Clean soft mint grey background */
+  color: #1e293b; /* slate-800 */
+  min-height: 100vh;
+}
+
+/* HomePage: peta fullscreen (tidak scroll) */
+.page-map {
+  overflow: hidden;
 }
 
 /* Leaflet map styles */
 .leaflet-container {
   width: 100%;
   height: 100%;
-  background: #030f0a !important;
+  background: #e2e8f0 !important; /* Light slate fallback */
 }
 
-/* Custom dark styling for Leaflet Popup (Forest Green Theme) */
+/* Custom light styling for Leaflet Popup (Premium Clean Emerald Theme) */
 .leaflet-popup-content-wrapper, .leaflet-popup-tip {
-  background: #051a12 !important; /* Forest Dark Green */
-  color: #f8fafc !important;
-  border: 1px solid #047857; /* Emerald 700 */
+  background: #ffffff !important;
+  color: #1e293b !important;
+  border: 1.5px solid #10b981; /* Emerald 500 */
   border-radius: 0.75rem !important;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.7) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1) !important;
 }
 
 .leaflet-popup-close-button {
-  color: #a7f3d0 !important; /* Emerald 200 */
+  color: #64748b !important; /* slate-500 */
 }
 
 .leaflet-popup-close-button:hover {
-  color: #f8fafc !important;
+  color: #0f172a !important; /* slate-900 */
 }
 
 /* Scrollbar styling for sidebar */
@@ -48,10 +53,10 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #064e3b; /* Emerald 900 */
+  background: #cbd5e1; /* slate-300 */
   border-radius: 3px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #059669; /* Emerald 600 */
+  background: #10b981; /* Emerald 500 */
 }

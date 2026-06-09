@@ -15,7 +15,8 @@ return new class extends Migration
             $table->id('id_laporan');
             $table->geometry('koordinat_laporan', 'point', 4326); // Kolom spasial POINT SRID 4326
             $table->text('deskripsi');
-            $table->string('foto_bukti', 255)->nullable();
+            $table->date('tanggal_kejadian')->nullable(); // Tanggal kejadian longsor
+            $table->string('foto_bukti', 500)->nullable();  // Path file upload atau URL
             $table->boolean('status_validasi')->default(false);
             $table->timestamp('waktu_kirim')->useCurrent();
             $table->spatialIndex('koordinat_laporan');

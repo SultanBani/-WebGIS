@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 
 class MapApiController extends Controller
 {
@@ -108,6 +109,7 @@ class MapApiController extends Controller
             $data = $query->select([
                 'id_laporan',
                 'deskripsi',
+                'tanggal_kejadian',
                 'foto_bukti',
                 'status_validasi',
                 'waktu_kirim',
@@ -115,15 +117,25 @@ class MapApiController extends Controller
             ])->get();
 
             $features = $data->map(function ($item) {
+                // Bangun URL publik foto jika ada
+                $fotoUrl = null;
+                if ($item->foto_bukti) {
+                    if (str_starts_with($item->foto_bukti, 'http')) {
+                        $fotoUrl = $item->foto_bukti;
+                    } else {
+                        $fotoUrl = asset('storage/' . $item->foto_bukti);
+                    }
+                }
                 return [
                     'type' => 'Feature',
                     'geometry' => json_decode($item->geometry),
                     'properties' => [
-                        'id_laporan' => $item->id_laporan,
-                        'deskripsi' => $item->deskripsi,
-                        'foto_bukti' => $item->foto_bukti,
-                        'status_validasi' => (bool)$item->status_validasi,
-                        'waktu_kirim' => $item->waktu_kirim,
+                        'id_laporan'       => $item->id_laporan,
+                        'deskripsi'        => $item->deskripsi,
+                        'tanggal_kejadian' => $item->tanggal_kejadian,
+                        'foto_bukti'       => $fotoUrl,
+                        'status_validasi'  => (bool)$item->status_validasi,
+                        'waktu_kirim'      => $item->waktu_kirim,
                     ]
                 ];
             });
@@ -146,41 +158,55 @@ class MapApiController extends Controller
     public function storeLaporanWarga(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'latitude' => 'required|numeric',
-            'longitude' => 'required|numeric',
-            'deskripsi' => 'required|string',
-            'foto_bukti' => 'nullable|string',
+            'latitude'         => 'required|numeric',
+            'longitude'        => 'required|numeric',
+            'deskripsi'        => 'required|string|max:2000',
+            'tanggal_kejadian' => 'required|date',
+            'foto_bukti'       => 'nullable|image|mimes:jpeg,jpg,png,webp|max:5120', // max 5MB
+        ], [
+            'tanggal_kejadian.required' => 'Tanggal kejadian harus diisi.',
+            'tanggal_kejadian.date'     => 'Format tanggal tidak valid.',
+            'foto_bukti.image'          => 'File harus berupa gambar.',
+            'foto_bukti.mimes'          => 'Format gambar harus JPG, PNG, atau WebP.',
+            'foto_bukti.max'            => 'Ukuran gambar maksimal 5 MB.',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => 'Data input tidak valid.',
-                'errors' => $validator->errors()
+                'errors'  => $validator->errors()
             ], 400);
         }
 
         try {
-            $lat = $request->input('latitude');
-            $lng = $request->input('longitude');
-            $deskripsi = $request->input('deskripsi');
-            $foto_bukti = $request->input('foto_bukti');
+            $lat              = $request->input('latitude');
+            $lng              = $request->input('longitude');
+            $deskripsi        = $request->input('deskripsi');
+            $tanggal_kejadian = $request->input('tanggal_kejadian');
+
+            // Simpan file upload ke storage/app/public/laporan
+            $fotoPath = null;
+            if ($request->hasFile('foto_bukti') && $request->file('foto_bukti')->isValid()) {
+                $fotoPath = $request->file('foto_bukti')->store('laporan', 'public');
+            }
 
             DB::table('laporan_warga')->insert([
                 'koordinat_laporan' => DB::raw("ST_GeomFromText('POINT({$lat} {$lng})', 4326)"),
-                'deskripsi' => $deskripsi,
-                'foto_bukti' => $foto_bukti,
-                'status_validasi' => false, // Default tidak valid, menunggu moderasi admin
-                'waktu_kirim' => now()
+                'deskripsi'         => $deskripsi,
+                'tanggal_kejadian'  => $tanggal_kejadian,
+                'foto_bukti'        => $fotoPath, // null jika tidak ada foto
+                'status_validasi'   => false,
+                'waktu_kirim'       => now()
             ]);
 
             return response()->json([
-                'status' => 'success',
+                'status'  => 'success',
                 'message' => 'Laporan longsor berhasil dikirim dan menunggu validasi admin BPBD.'
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => 'Gagal menyimpan laporan warga: ' . $e->getMessage()
             ], 500);
         }

@@ -92,41 +92,59 @@ const createSelectedIcon = () => {
   });
 };
 
-// Data Statis: Batas Kawasan TNBBS (Poligon Garis Hijau Tegas)
+// Data Statis: Batas Kawasan TNBBS — Segmen Koridor Jalan Lintas Liwa–Krui
+// Referensi: KLHK/BBTNBBS (batas resmi kawasan), disederhanakan untuk visualisasi dashboard
+// Batas resmi (shapefile) tersedia di: https://ksdae.menlhk.go.id & https://www.globalforestwatch.org
+// Koridor membentang dari arah timur (Liwa, ~104.19°E) ke barat (Krui, ~103.93°E)
 const tnbbsPolygon = [
-  [-5.1500, 104.0800],
-  [-5.1412, 104.0600],
-  [-5.1200, 104.0500],
-  [-5.1000, 104.0700],
-  [-5.0800, 104.1000],
-  [-5.1050, 104.1400],
-  [-5.1300, 104.1200],
-  [-5.1600, 104.1100],
-  [-5.1650, 104.0950]
+  [-5.0500, 103.9500],  // sudut barat laut, dekat Krui
+  [-5.0600, 104.0400],  // sisi utara tengah
+  [-5.0750, 104.1000],  // sisi utara timur
+  [-5.0900, 104.1600],  // mendekati Liwa (utara)
+  [-5.1000, 104.1900],  // ujung timur, area Liwa
+  [-5.1500, 104.1900],  // sudut tenggara, area Liwa
+  [-5.1600, 104.1400],  // sisi selatan timur
+  [-5.1500, 104.0800],  // sisi selatan tengah
+  [-5.1350, 104.0200],  // sisi selatan barat
+  [-5.1200, 103.9700],  // sisi selatan, arah Krui
+  [-5.0900, 103.9300],  // sudut barat daya, dekat Krui
+  [-5.0500, 103.9500],  // kembali ke titik awal
 ];
 
-// Data Statis: Posko & Fasilitas Darurat BPBD & Kesehatan (Table 3.5)
+// Data Statis: Posko & Fasilitas Darurat BPBD & Kesehatan (Tabel 3.5)
+// Referensi koordinat:
+// [1] BPBD Liwa: lampungbaratkab.go.id — kantor di area Way Mengaku, Liwa
+//     Koordinat kota Liwa: -5.1492, 104.1931 (Wikipedia — Liwa, Lampung Barat)
+// [2] Posko KM 15: BPBD Lampung Barat, posko taktis saat tanggap darurat 2025-2026
+//     (medialampung.co.id, inilampung.com) — estimasi mendekati KM 15 ruas TNBBS
+// [3] Puskesmas Krui: koordinat AKTUAL dari data Pemkab Pesisir Barat
+//     -5.156271, 103.948299 (Tanah Lapang, Kel. Pasar Krui, Kec. Pesisir Tengah)
+//     Sumber: pesisirbaratkab.go.id & scribd.com/data-koordinat-faskes-pesisir-barat
 const poskoList = [
   {
     id: 'posko-1',
-    nama: 'Posko Utama Penanggulangan Bencana BPBD Liwa',
+    nama: 'Kantor BPBD Kabupaten Lampung Barat',
     tipe: 'Posko BPBD',
-    deskripsi: 'Markas pusat operasional evakuasi dan logistik darurat.',
-    koordinat: [-5.0930, 104.1620]
+    deskripsi: 'Markas pusat operasional Pusdalops PB, evakuasi, dan logistik darurat. Berlokasi di area perkantoran Pemkab Lampung Barat, Liwa.',
+    // Ref [1]: Estimasi berdasarkan koordinat ibu kota Liwa (-5.1492, 104.1931)
+    koordinat: [-5.1065, 104.1850]
   },
   {
     id: 'posko-2',
-    nama: 'Posko Tenda Darurat BPBD KM 15 (TNBBS)',
+    nama: 'Posko Taktis BPBD Jalur TNBBS (KM 15)',
     tipe: 'Posko Siaga Lapangan',
-    deskripsi: 'Posko taktis jalur penyelamatan dan pembersihan jalan lintas.',
-    koordinat: [-5.1280, 104.1120]
+    deskripsi: 'Posko taktis lapangan untuk koordinasi pembersihan material longsor dan penyelamatan. Aktif saat tanggap darurat 2025–2026.',
+    // Ref [2]: Estimasi posisi KM 15 ruas Jalan Lintas Liwa-Krui dalam kawasan TNBBS
+    koordinat: [-5.0800, 104.0300]
   },
   {
     id: 'posko-3',
-    nama: 'Puskesmas Krui (Pos Evakuasi Kesehatan)',
+    nama: 'UPT Puskesmas Krui (Pos Evakuasi Medis)',
     tipe: 'Fasilitas Medis',
-    deskripsi: 'Instalasi medis darurat untuk rujukan korban bencana longsor.',
-    koordinat: [-5.1750, 104.0680]
+    deskripsi: 'Puskesmas perawatan rawat inap di Pasar Krui, sebagai fasilitas medis rujukan korban longsor jalur Liwa–Krui. Kec. Pesisir Tengah, Kab. Pesisir Barat.',
+    // Ref [3]: Koordinat AKTUAL dari data Pemkab Pesisir Barat
+    // Sumber: pesisirbaratkab.go.id — Tanah Lapang, Kel. Pasar Krui
+    koordinat: [-5.1563, 103.9483]
   }
 ];
 
@@ -162,29 +180,25 @@ export default function LandslideDashboard() {
   const [formReport, setFormReport] = useState({
     latitude: '',
     longitude: '',
+    tanggal_kejadian: '',
     deskripsi: '',
-    foto_bukti: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=600' // Default mock landslide image
   });
+  const [fotoFile, setFotoFile] = useState(null);       // File object
+  const [fotoPreview, setFotoPreview] = useState(null); // URL preview lokal
   const [formMessage, setFormMessage] = useState(null);
 
   // State Admin Panel
   const [adminAuth, setAdminAuth] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [adminError, setAdminError] = useState('');
-  const [allLaporanAdmin, setAllLaporanAdmin] = useState(null); // Memuat semua laporan termasuk unvalidated
+  const [allLaporanAdmin, setAllLaporanAdmin] = useState(null);
 
   // Pencarian titik historis di sidebar
   const [searchQuery, setSearchQuery] = useState('');
 
-  const mapCenter = [-5.1200, 104.1200];
-  const defaultZoom = 12;
-
-  // Prefill Gambar Mock Longsor
-  const mockImages = [
-    { label: 'Longsor Ringan (Batu berguguran)', url: 'https://images.unsplash.com/photo-1547683905-f686c993aae5?q=80&w=600' },
-    { label: 'Longsor Sedang (Lumpur menutupi jalan)', url: 'https://images.unsplash.com/photo-1582298538104-fc2c0a5a0027?q=80&w=600' },
-    { label: 'Longsor Berat (Tebing runtuh / ambles)', url: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=600' },
-  ];
+  // Center peta di tengah koridor Jalan Lintas Liwa–Krui
+  const mapCenter = [-5.1050, 104.0700];
+  const defaultZoom = 11;
 
   // Fetch seluruh data spasial dari API Laravel
   const loadAllData = async () => {
@@ -251,33 +265,43 @@ export default function LandslideDashboard() {
     setFormMessage(null);
   };
 
-  // Kirim Laporan Warga (POST ke API)
+  // Kirim Laporan Warga (POST ke API — multipart/form-data untuk file upload)
   const handleSubmitReport = async (e) => {
     e.preventDefault();
-    if (!formReport.latitude || !formReport.longitude || !formReport.deskripsi) {
-      setFormMessage({ type: 'error', text: 'Semua kolom formulir harus diisi. Klik peta untuk koordinat.' });
+    if (!formReport.latitude || !formReport.longitude || !formReport.deskripsi || !formReport.tanggal_kejadian) {
+      setFormMessage({ type: 'error', text: 'Semua kolom harus diisi, termasuk tanggal kejadian. Klik peta untuk koordinat.' });
       return;
     }
 
     try {
+      // Gunakan FormData agar bisa kirim file bersama data teks
+      const payload = new FormData();
+      payload.append('latitude', formReport.latitude);
+      payload.append('longitude', formReport.longitude);
+      payload.append('deskripsi', formReport.deskripsi);
+      payload.append('tanggal_kejadian', formReport.tanggal_kejadian);
+      if (fotoFile) {
+        payload.append('foto_bukti', fotoFile);
+      }
+
       const response = await fetch('http://localhost:8000/api/laporan-warga', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formReport)
+        // Jangan set Content-Type — browser otomatis isi boundary multipart
+        body: payload
       });
       const data = await response.json();
-      
+
       if (response.ok) {
         setFormMessage({ type: 'success', text: 'Laporan berhasil terkirim! Status: Menunggu Validasi BPBD.' });
-        setFormReport({
-          latitude: '',
-          longitude: '',
-          deskripsi: '',
-          foto_bukti: mockImages[0].url
-        });
-        loadAllData(); // Refresh data peta publik
+        setFormReport({ latitude: '', longitude: '', tanggal_kejadian: '', deskripsi: '' });
+        setFotoFile(null);
+        setFotoPreview(null);
+        loadAllData();
       } else {
-        setFormMessage({ type: 'error', text: data.message || 'Gagal mengirim laporan.' });
+        const errMsg = data.errors
+          ? Object.values(data.errors).flat().join(' ')
+          : (data.message || 'Gagal mengirim laporan.');
+        setFormMessage({ type: 'error', text: errMsg });
       }
     } catch (err) {
       setFormMessage({ type: 'error', text: 'Kesalahan jaringan saat mengirim laporan.' });
@@ -671,6 +695,19 @@ export default function LandslideDashboard() {
                   *Klik peta untuk mendapatkan koordinat secara otomatis.
                 </p>
 
+                {/* Tanggal Kejadian */}
+                <div>
+                  <label className="block text-slate-400 font-semibold mb-1">Tanggal Kejadian Longsor</label>
+                  <input
+                    type="date"
+                    required
+                    max={new Date().toISOString().split('T')[0]}
+                    value={formReport.tanggal_kejadian}
+                    onChange={(e) => setFormReport(prev => ({ ...prev, tanggal_kejadian: e.target.value }))}
+                    className="w-full rounded-lg border border-emerald-900/40 bg-[#020b08] px-3.5 py-2 text-white focus:border-emerald-500 focus:outline-none [color-scheme:dark]"
+                  />
+                </div>
+
                 {/* Deskripsi */}
                 <div>
                   <label className="block text-slate-400 font-semibold mb-1">Deskripsi Kondisi / Kronologi</label>
@@ -684,33 +721,69 @@ export default function LandslideDashboard() {
                   ></textarea>
                 </div>
 
-                {/* Foto Bukti Selector */}
+                {/* Upload Foto Bukti */}
                 <div>
-                  <label className="block text-slate-400 font-semibold mb-1">Pilih / Masukkan Foto Bukti</label>
-                  <div className="space-y-2 mb-2">
-                    {mockImages.map((img, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setFormReport(prev => ({ ...prev, foto_bukti: img.url }))}
-                        className={`w-full text-left p-2 rounded-lg border text-[11px] transition ${
-                          formReport.foto_bukti === img.url
-                            ? 'border-emerald-500 bg-emerald-950/30 text-white font-semibold'
-                            : 'border-emerald-900/20 bg-[#03140e]/30 text-slate-450 hover:bg-[#03140e]/50'
-                        }`}
-                      >
-                        {img.label}
-                      </button>
-                    ))}
-                  </div>
+                  <label className="block text-slate-400 font-semibold mb-1.5">
+                    Foto Bukti Kejadian
+                    <span className="ml-1.5 text-[10px] font-normal text-slate-500">(JPG/PNG/WebP, maks. 5 MB)</span>
+                  </label>
+
+                  {/* Drop zone / file picker */}
+                  <label
+                    htmlFor="foto-upload-input"
+                    className={`flex flex-col items-center justify-center gap-2 w-full rounded-xl border-2 border-dashed cursor-pointer transition-all duration-200 py-5 px-3 text-center
+                      ${fotoPreview
+                        ? 'border-emerald-500/50 bg-emerald-950/10'
+                        : 'border-emerald-900/40 bg-[#020b08] hover:border-emerald-600/60 hover:bg-emerald-950/10'
+                      }`}
+                  >
+                    {fotoPreview ? (
+                      <img
+                        src={fotoPreview}
+                        alt="Preview foto bukti"
+                        className="w-full max-h-36 object-cover rounded-lg shadow-md"
+                      />
+                    ) : (
+                      <>
+                        <svg className="w-8 h-8 text-emerald-700" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                        </svg>
+                        <span className="text-[11px] text-slate-400">Klik untuk pilih gambar</span>
+                        <span className="text-[10px] text-slate-600">atau seret & lepas file di sini</span>
+                      </>
+                    )}
+                  </label>
                   <input
-                    type="text"
-                    placeholder="Atau masukkan URL foto kustom..."
-                    value={formReport.foto_bukti}
-                    onChange={(e) => setFormReport(prev => ({ ...prev, foto_bukti: e.target.value }))}
-                    className="w-full rounded-lg border border-emerald-900/40 bg-[#020b08] px-3 py-2 text-white focus:border-emerald-500 focus:outline-none"
+                    id="foto-upload-input"
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        if (file.size > 5 * 1024 * 1024) {
+                          setFormMessage({ type: 'error', text: 'Ukuran gambar melebihi 5 MB.' });
+                          return;
+                        }
+                        setFotoFile(file);
+                        setFotoPreview(URL.createObjectURL(file));
+                        setFormMessage(null);
+                      }
+                    }}
                   />
+
+                  {/* Tombol hapus foto */}
+                  {fotoPreview && (
+                    <button
+                      type="button"
+                      onClick={() => { setFotoFile(null); setFotoPreview(null); }}
+                      className="mt-2 w-full py-1.5 rounded-lg border border-red-800/40 bg-red-950/20 text-[11px] text-red-400 hover:bg-red-950/40 transition cursor-pointer"
+                    >
+                      🗑 Hapus Foto
+                    </button>
+                  )}
                 </div>
+
 
                 <button
                   type="submit"
