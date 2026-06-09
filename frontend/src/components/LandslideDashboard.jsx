@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polygon, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import tnbbsBoundaryData from '../data/tnbbs_boundary.json';
@@ -169,14 +169,14 @@ export default function LandslideDashboard() {
   const [historisData, setHistorisData] = useState(null);
   const [zonasiData, setZonasiData] = useState(null);
   const [laporanWarga, setLaporanWarga] = useState(null);
-  
+
   // State Loading & Error
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   // State Fokus Peta
   const [activePoint, setActivePoint] = useState(null);
-  
+
   // State Tipe Base Map
   const [mapStyle, setMapStyle] = useState('satellite');
 
@@ -217,21 +217,21 @@ export default function LandslideDashboard() {
   const loadAllData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch Titik Historis (Tabel 3.2)
-      const resHistoris = await fetch('http://localhost:8000/api/titik-longsor');
+      const resHistoris = await fetch('http://127.0.0.1:8000/api/titik-longsor');
       if (!resHistoris.ok) throw new Error('Gagal mengambil data titik historis.');
       const dataHistoris = await resHistoris.json();
       setHistorisData(dataHistoris);
 
       // Fetch Zonasi Rawan (Tabel 3.3)
-      const resZonasi = await fetch('http://localhost:8000/api/zonasi-rawan');
+      const resZonasi = await fetch('http://127.0.0.1:8000/api/zonasi-rawan');
       if (!resZonasi.ok) throw new Error('Gagal mengambil data zonasi rawan.');
       const dataZonasi = await resZonasi.json();
       setZonasiData(dataZonasi);
 
       // Fetch Laporan Warga Publik (Tabel 3.4)
-      const resLaporan = await fetch('http://localhost:8000/api/laporan-warga');
+      const resLaporan = await fetch('http://127.0.0.1:8000/api/laporan-warga');
       if (!resLaporan.ok) throw new Error('Gagal mengambil data laporan warga.');
       const dataLaporan = await resLaporan.json();
       setLaporanWarga(dataLaporan);
@@ -252,7 +252,7 @@ export default function LandslideDashboard() {
   // Fetch semua laporan warga untuk admin (?all=true)
   const loadAdminReports = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/laporan-warga?all=true');
+      const response = await fetch('http://127.0.0.1:8000/api/laporan-warga?all=true');
       if (response.ok) {
         const data = await response.json();
         setAllLaporanAdmin(data);
@@ -297,7 +297,7 @@ export default function LandslideDashboard() {
         payload.append('foto_bukti', fotoFile);
       }
 
-      const response = await fetch('http://localhost:8000/api/laporan-warga', {
+      const response = await fetch('http://127.0.0.1:8000/api/laporan-warga', {
         method: 'POST',
         // Jangan set Content-Type — browser otomatis isi boundary multipart
         body: payload
@@ -324,7 +324,7 @@ export default function LandslideDashboard() {
   // Validasi Laporan (PATCH)
   const handleValidateReport = async (id) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/laporan-warga/${id}/validate`, {
+      const response = await fetch(`http://127.0.0.1:8000/api/laporan-warga/${id}/validate`, {
         method: 'PATCH'
       });
       if (response.ok) {
@@ -340,7 +340,7 @@ export default function LandslideDashboard() {
   const handleDeleteReport = async (id) => {
     if (!confirm('Apakah Anda yakin ingin menghapus laporan ini?')) return;
     try {
-      const response = await fetch(`http://localhost:8000/api/laporan-warga/${id}`, {
+      const response = await fetch(`http://127.0.0.1:8000/api/laporan-warga/${id}`, {
         method: 'DELETE'
       });
       if (response.ok) {
@@ -363,18 +363,26 @@ export default function LandslideDashboard() {
     }
   };
 
-  // Hitung Statistik Bencana
-  const getStats = () => {
-    if (!historisData || !historisData.features) return { total: 0, berat: 0, sedang: 0, ringan: 0 };
+  // Hitung Statistik Bencana — reaktif via useMemo agar selalu sinkron dengan historisData
+  // Mapping ganda: mendukung nilai dari DB titik_longsor ('Berat'/'Sedang'/'Ringan')
+  // maupun nilai dari zonasi_rawan ('Tinggi'→Berat, 'Sedang'→Sedang, 'Rendah'→Ringan)
+  const stats = useMemo(() => {
+    if (!historisData || !Array.isArray(historisData.features)) {
+      return { total: 0, berat: 0, sedang: 0, ringan: 0, laporan: 0 };
+    }
     const features = historisData.features;
-    return {
-      total: features.length,
-      berat: features.filter(f => f.properties.tingkat_kerusakan === 'Berat').length,
-      sedang: features.filter(f => f.properties.tingkat_kerusakan === 'Sedang').length,
-      ringan: features.filter(f => f.properties.tingkat_kerusakan === 'Ringan').length,
-    };
-  };
-  const stats = getStats();
+    const berat = features.filter(f => {
+      const tk = f.properties?.tingkat_kerusakan;
+      return tk === 'Berat' || tk === 'Tinggi'; // mapping zonasi → historis
+    }).length;
+    const sedang = features.filter(f => f.properties?.tingkat_kerusakan === 'Sedang').length;
+    const ringan = features.filter(f => {
+      const tk = f.properties?.tingkat_kerusakan;
+      return tk === 'Ringan' || tk === 'Rendah'; // mapping zonasi → historis
+    }).length;
+    const laporan = laporanWarga?.features?.length ?? 0;
+    return { total: features.length, berat, sedang, ringan, laporan };
+  }, [historisData, laporanWarga]);
 
   // Konversi GeoJSON Polygon/MultiPolygon ke Leaflet Koordinat Array
   // Menangani kedua tipe geometri untuk mencegah crash saat data DB kompleks
@@ -446,11 +454,11 @@ export default function LandslideDashboard() {
   ) || [];
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#020b08] font-sans text-slate-200">
-      
+    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 font-sans text-slate-800">
+
       {/* SIDEBAR DASHBOARD UTAMA */}
-      <aside className="z-10 flex w-100 shrink-0 flex-col border-r border-emerald-950 bg-[#03140e]/95 backdrop-blur-md shadow-2xl">
-        
+      <aside className="z-10 flex w-100 shrink-0 flex-col rounded-r-2xl border border-white/20 bg-white/80 backdrop-blur-md shadow-xl text-slate-800">
+
         {/* Header SIG */}
         <div className="p-5 border-b border-emerald-900/30">
           <div className="flex items-center gap-3">
@@ -464,26 +472,25 @@ export default function LandslideDashboard() {
               </svg>
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-white bg-gradient-to-r from-emerald-400 via-emerald-100 to-white bg-clip-text">
+              <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-teal-700 to-emerald-600 bg-clip-text text-transparent font-bold">
                 CORESIDE WebGIS
               </h1>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-450">Mitigasi Jalur Krui-Liwa</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-teal-700">Mitigasi Jalur Krui-Liwa</p>
             </div>
           </div>
-          <p className="mt-3 text-xs text-slate-400 leading-relaxed">
+          <p className="mt-3 text-xs text-slate-600 leading-relaxed">
             Sistem Informasi Geografis pemetaan zonasi weighted sum overlay kerawanan longsor & pelaporan masyarakat TNBBS, Lampung.
           </p>
         </div>
 
         {/* Tab Switcher */}
-        <div className="grid grid-cols-3 border-b border-emerald-900/20 text-xs font-semibold bg-emerald-950/10">
+        <div className="grid grid-cols-3 border-b border-slate-200 text-xs font-semibold bg-slate-100/50">
           <button
             onClick={() => setActiveTab('spasial')}
-            className={`py-3 text-center border-b-2 cursor-pointer transition ${
-              activeTab === 'spasial'
-                ? 'border-emerald-500 text-white bg-emerald-950/20'
-                : 'border-transparent text-slate-400 hover:text-white'
-            }`}
+            className={`py-3 text-center border-b-2 cursor-pointer transition ${activeTab === 'spasial'
+                ? 'border-teal-600 text-teal-800 bg-teal-50/80'
+                : 'border-transparent text-slate-500 hover:text-teal-700'
+              }`}
           >
             Peta & Historis
           </button>
@@ -492,21 +499,19 @@ export default function LandslideDashboard() {
               setActiveTab('laporkan');
               setFormMessage(null);
             }}
-            className={`py-3 text-center border-b-2 cursor-pointer transition ${
-              activeTab === 'laporkan'
-                ? 'border-emerald-500 text-white bg-emerald-950/20'
-                : 'border-transparent text-slate-400 hover:text-white'
-            }`}
+            className={`py-3 text-center border-b-2 cursor-pointer transition ${activeTab === 'laporkan'
+                ? 'border-teal-600 text-teal-800 bg-teal-50/80'
+                : 'border-transparent text-slate-500 hover:text-teal-700'
+              }`}
           >
             Laporkan Longsor
           </button>
           <button
             onClick={() => setActiveTab('admin')}
-            className={`py-3 text-center border-b-2 cursor-pointer transition ${
-              activeTab === 'admin'
-                ? 'border-emerald-500 text-white bg-emerald-950/20'
-                : 'border-transparent text-slate-400 hover:text-white'
-            }`}
+            className={`py-3 text-center border-b-2 cursor-pointer transition ${activeTab === 'admin'
+                ? 'border-teal-600 text-teal-800 bg-teal-50/80'
+                : 'border-transparent text-slate-500 hover:text-teal-700'
+              }`}
           >
             Admin BPBD
           </button>
@@ -514,51 +519,51 @@ export default function LandslideDashboard() {
 
         {/* AREA KONTEN TAB */}
         <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-          
+
           {/* TAB 1: DATA SPASIAL & STATISTIK */}
           {activeTab === 'spasial' && (
             <div className="space-y-4">
-              
+
               {/* Ringkasan Statistik */}
-              <div className="rounded-xl border border-emerald-900/40 bg-emerald-955/10 p-3.5 shadow-sm">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-450 mb-2">Tingkat Kerusakan Bencana</h3>
+              <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-3.5">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-teal-700 mb-2">Tingkat Kerusakan Bencana</h3>
                 <div className="grid grid-cols-3 gap-2">
-                  <div className="rounded-lg bg-red-950/20 p-2 text-center border border-red-900/20">
-                    <div className="text-xl font-bold text-red-500">{loading ? '-' : stats.berat}</div>
-                    <div className="text-[9px] text-slate-400 uppercase font-semibold">Berat</div>
+                  <div className="rounded-lg bg-gradient-to-br from-red-500 to-rose-600 p-2 text-center text-white shadow-lg shadow-red-500/20">
+                    <div className="text-xl font-bold text-white">{loading ? '-' : stats.berat}</div>
+                    <div className="text-[9px] text-white uppercase font-semibold">Berat</div>
                   </div>
-                  <div className="rounded-lg bg-orange-950/20 p-2 text-center border border-orange-900/20">
-                    <div className="text-xl font-bold text-orange-500">{loading ? '-' : stats.sedang}</div>
-                    <div className="text-[9px] text-slate-400 uppercase font-semibold">Sedang</div>
+                  <div className="rounded-lg bg-gradient-to-br from-orange-400 to-amber-600 p-2 text-center text-white shadow-lg shadow-orange-500/20">
+                    <div className="text-xl font-bold text-white">{loading ? '-' : stats.sedang}</div>
+                    <div className="text-[9px] text-white uppercase font-semibold">Sedang</div>
                   </div>
-                  <div className="rounded-lg bg-yellow-950/20 p-2 text-center border border-yellow-900/20">
-                    <div className="text-xl font-bold text-yellow-500">{loading ? '-' : stats.ringan}</div>
-                    <div className="text-[9px] text-slate-400 uppercase font-semibold">Ringan</div>
+                  <div className="rounded-lg bg-gradient-to-br from-yellow-300 to-amber-400 p-2 text-center text-slate-800 shadow-lg">
+                    <div className="text-xl font-bold text-slate-800">{loading ? '-' : stats.ringan}</div>
+                    <div className="text-[9px] text-slate-800 uppercase font-semibold">Ringan</div>
                   </div>
                 </div>
-                <div className="mt-2.5 flex justify-between items-center text-xs text-slate-300 bg-emerald-950/30 p-2 rounded border border-emerald-900/30">
+                <div className="mt-2.5 flex justify-between items-center text-xs text-white bg-gradient-to-br from-slate-700 to-slate-900 p-2.5 rounded-lg shadow-lg">
                   <span>Total Titik Historis Terpetakan:</span>
-                  <span className="font-bold text-emerald-400 text-sm">{loading ? '...' : stats.total}</span>
+                  <span className="font-bold text-white text-sm">{loading ? '...' : stats.total}</span>
                 </div>
               </div>
 
               {/* Layer Toggles (Kontrol Layer Mandiri) */}
-              <div className="rounded-xl border border-emerald-900/30 bg-[#041911]/30 p-3.5">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-450 mb-3">Kontrol Layer Peta</h3>
+              <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-3.5">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-teal-700 mb-3">Kontrol Layer Peta</h3>
                 <div className="space-y-2 text-xs">
-                  <label className="flex items-center justify-between cursor-pointer p-1.5 rounded hover:bg-emerald-900/10 transition">
+                  <label className="flex items-center justify-between cursor-pointer p-1.5 rounded hover:bg-slate-50 transition">
                     <span className="flex items-center gap-2">
-                      <span className="h-3 w-3 rounded-full border border-emerald-400 bg-emerald-900/40"></span>
+                      <span className="h-3 w-3 rounded-full border border-emerald-400 bg-emerald-100"></span>
                       Batas Kawasan TNBBS (Polygon)
                     </span>
                     <input
                       type="checkbox"
                       checked={layerControl.tnbbs}
                       onChange={() => setLayerControl(prev => ({ ...prev, tnbbs: !prev.tnbbs }))}
-                      className="accent-emerald-550 h-4 w-4"
+                      className="accent-emerald-600 h-4 w-4"
                     />
                   </label>
-                  <label className="flex items-center justify-between cursor-pointer p-1.5 rounded hover:bg-emerald-900/10 transition">
+                  <label className="flex items-center justify-between cursor-pointer p-1.5 rounded hover:bg-slate-50 transition">
                     <span className="flex items-center gap-2">
                       <span className="h-3 w-3 rounded bg-gradient-to-r from-red-500 to-green-500"></span>
                       Zonasi Rawan Overlay (Choropleth)
@@ -567,10 +572,10 @@ export default function LandslideDashboard() {
                       type="checkbox"
                       checked={layerControl.zonasi}
                       onChange={() => setLayerControl(prev => ({ ...prev, zonasi: !prev.zonasi }))}
-                      className="accent-emerald-550 h-4 w-4"
+                      className="accent-emerald-600 h-4 w-4"
                     />
                   </label>
-                  <label className="flex items-center justify-between cursor-pointer p-1.5 rounded hover:bg-emerald-900/10 transition">
+                  <label className="flex items-center justify-between cursor-pointer p-1.5 rounded hover:bg-slate-50 transition">
                     <span className="flex items-center gap-2">
                       <span className="inline-block border-b-2 border-r-2 border-transparent w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[10px] border-b-red-500"></span>
                       Titik Historis Bencana (Segitiga)
@@ -579,10 +584,10 @@ export default function LandslideDashboard() {
                       type="checkbox"
                       checked={layerControl.historis}
                       onChange={() => setLayerControl(prev => ({ ...prev, historis: !prev.historis }))}
-                      className="accent-emerald-550 h-4 w-4"
+                      className="accent-emerald-600 h-4 w-4"
                     />
                   </label>
-                  <label className="flex items-center justify-between cursor-pointer p-1.5 rounded hover:bg-emerald-900/10 transition">
+                  <label className="flex items-center justify-between cursor-pointer p-1.5 rounded hover:bg-slate-50 transition">
                     <span className="flex items-center gap-2">
                       <span className="h-3.5 w-3.5 rounded-full bg-blue-600 border border-white flex items-center justify-center text-[8px] font-bold text-white">+</span>
                       Posko & Fasilitas Darurat BPBD
@@ -591,10 +596,10 @@ export default function LandslideDashboard() {
                       type="checkbox"
                       checked={layerControl.posko}
                       onChange={() => setLayerControl(prev => ({ ...prev, posko: !prev.posko }))}
-                      className="accent-emerald-550 h-4 w-4"
+                      className="accent-emerald-600 h-4 w-4"
                     />
                   </label>
-                  <label className="flex items-center justify-between cursor-pointer p-1.5 rounded hover:bg-emerald-900/10 transition">
+                  <label className="flex items-center justify-between cursor-pointer p-1.5 rounded hover:bg-slate-50 transition">
                     <span className="flex items-center gap-2">
                       <span className="h-3.5 w-3.5 rounded-full bg-amber-500 border border-white flex items-center justify-center text-[7px] text-white">⚠️</span>
                       Laporan Kerusakan Warga
@@ -603,7 +608,7 @@ export default function LandslideDashboard() {
                       type="checkbox"
                       checked={layerControl.laporan}
                       onChange={() => setLayerControl(prev => ({ ...prev, laporan: !prev.laporan }))}
-                      className="accent-emerald-550 h-4 w-4"
+                      className="accent-emerald-600 h-4 w-4"
                     />
                   </label>
                 </div>
@@ -612,23 +617,23 @@ export default function LandslideDashboard() {
               {/* Daftar Lokasi Historis */}
               <div className="space-y-3">
                 <div className="flex justify-between items-center px-1">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-450">Daftar Titik Historis</h3>
-                  <span className="text-[10px] text-slate-450 bg-emerald-950/40 px-1.5 py-0.5 rounded">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-teal-700">Daftar Titik Historis</h3>
+                  <span className="text-[10px] text-teal-800 bg-teal-50 px-1.5 py-0.5 rounded font-bold">
                     {filteredHistoris.length} Lokasi
                   </span>
                 </div>
-                
+
                 {/* Search Box */}
                 <input
                   type="text"
                   placeholder="Cari lokasi detail longsor..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-lg border border-emerald-900/40 bg-[#020b08] px-3.5 py-2 text-xs text-white placeholder-emerald-800/80 focus:border-emerald-500 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                 />
 
                 {loading ? (
-                  <div className="flex flex-col items-center justify-center py-10 text-slate-400">
+                  <div className="flex flex-col items-center justify-center py-10 text-slate-500">
                     <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent mb-3"></div>
                     <p className="text-xs">Memuat data spasial...</p>
                   </div>
@@ -643,16 +648,16 @@ export default function LandslideDashboard() {
                       let badgeColor = '';
                       switch (feature.properties.tingkat_kerusakan) {
                         case 'Berat':
-                          badgeColor = 'bg-red-950/80 text-red-300 border-red-800/50';
+                          badgeColor = 'bg-red-50 text-red-600 border-red-200';
                           break;
                         case 'Sedang':
-                          badgeColor = 'bg-orange-950/80 text-orange-300 border-orange-800/50';
+                          badgeColor = 'bg-orange-50 text-orange-600 border-orange-200';
                           break;
                         case 'Ringan':
-                          badgeColor = 'bg-yellow-950/80 text-yellow-300 border-yellow-800/50';
+                          badgeColor = 'bg-yellow-50 text-yellow-600 border-yellow-200';
                           break;
                         default:
-                          badgeColor = 'bg-slate-800 text-slate-350 border-slate-700';
+                          badgeColor = 'bg-slate-100 text-slate-600 border-slate-200';
                       }
 
                       return (
@@ -666,28 +671,26 @@ export default function LandslideDashboard() {
                               setLayerControl(prev => ({ ...prev, historis: true }));
                             }
                           }}
-                          className={`relative cursor-pointer rounded-xl border p-3.5 transition-all duration-200 ${
-                            isSelected
-                              ? 'border-emerald-500 bg-emerald-950/30 scale-[1.01] shadow-lg shadow-emerald-950/30'
-                              : 'border-emerald-900/10 bg-[#041710]/40 hover:border-emerald-900/40 hover:bg-[#041710]/60'
-                          }`}
+                          className={`relative cursor-pointer rounded-xl border p-3.5 transition-all duration-200 ${isSelected
+                              ? 'border-emerald-500 bg-emerald-50 scale-[1.01] shadow-md shadow-emerald-500/10'
+                              : 'border-slate-200 bg-white hover:border-emerald-300 hover:bg-slate-50'
+                            }`}
                         >
-                          <div className={`absolute top-0 bottom-0 left-0 w-1 rounded-l-xl ${
-                            feature.properties.tingkat_kerusakan === 'Berat' ? 'bg-red-500' :
-                            feature.properties.tingkat_kerusakan === 'Sedang' ? 'bg-orange-500' : 'bg-yellow-500'
-                          }`}></div>
+                          <div className={`absolute top-0 bottom-0 left-0 w-1 rounded-l-xl ${feature.properties.tingkat_kerusakan === 'Berat' ? 'bg-red-500' :
+                              feature.properties.tingkat_kerusakan === 'Sedang' ? 'bg-orange-500' : 'bg-yellow-500'
+                            }`}></div>
 
                           <div className="flex flex-col gap-1.5 pl-1.5">
                             <div className="flex items-start justify-between gap-2">
-                              <h4 className="font-semibold text-xs text-slate-100 group-hover:text-white leading-tight">
+                              <h4 className="font-semibold text-xs text-slate-800 leading-tight">
                                 {feature.properties.lokasi_detail}
                               </h4>
-                              <span className={`inline-flex shrink-0 items-center rounded-full border px-1.5 py-0.5 text-[9px] font-medium ${badgeColor}`}>
+                              <span className={`inline-flex shrink-0 items-center rounded-full border px-1.5 py-0.5 text-[9px] font-bold ${badgeColor}`}>
                                 {feature.properties.tingkat_kerusakan}
                               </span>
                             </div>
 
-                            <div className="flex justify-between items-center text-[10px] text-slate-400 pt-1 border-t border-emerald-900/10 mt-1">
+                            <div className="flex justify-between items-center text-[10px] text-slate-500 pt-1 border-t border-slate-100 mt-1">
                               <span>Tgl: {feature.properties.tanggal_kejadian}</span>
                               <span className="flex items-center gap-1 font-mono">
                                 {lat.toFixed(4)}, {lng.toFixed(4)}
@@ -707,45 +710,44 @@ export default function LandslideDashboard() {
           {/* TAB 2: LAPORKAN LONGSOR (FORM CITIZEN) */}
           {activeTab === 'laporkan' && (
             <div className="space-y-4">
-              <div className="rounded-xl bg-emerald-950/20 border border-emerald-900/40 p-4">
-                <h3 className="text-sm font-bold text-white mb-1.5">Panduan Pelaporan Warga</h3>
-                <p className="text-xs text-slate-350 leading-relaxed">
-                  Untuk mendaftarkan laporan kejadian longsor secara presisi, silakan <strong className="text-emerald-450">klik langsung lokasi longsor pada Peta</strong>. Koordinat Lintang (Lat) dan Bujur (Long) akan terisi otomatis.
+              <div className="rounded-xl bg-teal-50 border border-teal-200 p-4">
+                <h3 className="text-sm font-bold text-teal-900 mb-1.5">Panduan Pelaporan Warga</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Untuk mendaftarkan laporan kejadian longsor secara presisi, silakan <strong className="text-teal-700">klik langsung lokasi longsor pada Peta</strong>. Koordinat Lintang (Lat) dan Bujur (Long) akan terisi otomatis.
                 </p>
               </div>
 
               {formMessage && (
-                <div className={`p-3 rounded-lg text-xs border ${
-                  formMessage.type === 'success'
-                    ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-300'
-                    : 'bg-red-950/40 border-red-500/50 text-red-300'
-                }`}>
+                <div className={`p-3 rounded-lg text-xs border ${formMessage.type === 'success'
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                    : 'bg-red-50 border-red-200 text-red-700'
+                  }`}>
                   {formMessage.text}
                 </div>
               )}
 
               <form onSubmit={handleSubmitReport} className="space-y-3.5 text-xs">
-                
+
                 {/* Lat/Long Fields */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-400 font-semibold mb-1">Lintang (Latitude)</label>
+                    <label className="block text-slate-700 font-semibold mb-1">Lintang (Latitude)</label>
                     <input
                       type="text"
                       readOnly
                       placeholder="-5.xxxxxx"
                       value={formReport.latitude}
-                      className="w-full rounded-lg border border-emerald-900/40 bg-[#020b08] px-3 py-2 text-white font-mono focus:outline-none"
+                      className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-slate-800 font-mono focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-400 font-semibold mb-1">Bujur (Longitude)</label>
+                    <label className="block text-slate-700 font-semibold mb-1">Bujur (Longitude)</label>
                     <input
                       type="text"
                       readOnly
                       placeholder="104.xxxxxx"
                       value={formReport.longitude}
-                      className="w-full rounded-lg border border-emerald-900/40 bg-[#020b08] px-3 py-2 text-white font-mono focus:outline-none"
+                      className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-slate-800 font-mono focus:outline-none"
                     />
                   </div>
                 </div>
@@ -755,33 +757,33 @@ export default function LandslideDashboard() {
 
                 {/* Tanggal Kejadian */}
                 <div>
-                  <label className="block text-slate-400 font-semibold mb-1">Tanggal Kejadian Longsor</label>
+                  <label className="block text-slate-700 font-semibold mb-1">Tanggal Kejadian Longsor</label>
                   <input
                     type="date"
                     required
                     max={new Date().toISOString().split('T')[0]}
                     value={formReport.tanggal_kejadian}
                     onChange={(e) => setFormReport(prev => ({ ...prev, tanggal_kejadian: e.target.value }))}
-                    className="w-full rounded-lg border border-emerald-900/40 bg-[#020b08] px-3.5 py-2 text-white focus:border-emerald-500 focus:outline-none [color-scheme:dark]"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-slate-800 focus:border-emerald-500 focus:outline-none"
                   />
                 </div>
 
                 {/* Deskripsi */}
                 <div>
-                  <label className="block text-slate-400 font-semibold mb-1">Deskripsi Kondisi / Kronologi</label>
+                  <label className="block text-slate-700 font-semibold mb-1">Deskripsi Kondisi / Kronologi</label>
                   <textarea
                     rows={4}
                     required
                     placeholder="Contoh: Terjadi longsoran tebing batuan setinggi 5 meter menutup jalan raya, kemacetan kendaraan sepanjang 500 meter..."
                     value={formReport.deskripsi}
                     onChange={(e) => setFormReport(prev => ({ ...prev, deskripsi: e.target.value }))}
-                    className="w-full rounded-lg border border-emerald-900/40 bg-[#020b08] px-3.5 py-2 text-white placeholder-emerald-900 focus:border-emerald-500 focus:outline-none"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:outline-none"
                   ></textarea>
                 </div>
 
                 {/* Upload Foto Bukti */}
                 <div>
-                  <label className="block text-slate-400 font-semibold mb-1.5">
+                  <label className="block text-slate-700 font-semibold mb-1.5">
                     Foto Bukti Kejadian
                     <span className="ml-1.5 text-[10px] font-normal text-slate-500">(JPG/PNG/WebP, maks. 5 MB)</span>
                   </label>
@@ -791,8 +793,8 @@ export default function LandslideDashboard() {
                     htmlFor="foto-upload-input"
                     className={`flex flex-col items-center justify-center gap-2 w-full rounded-xl border-2 border-dashed cursor-pointer transition-all duration-200 py-5 px-3 text-center
                       ${fotoPreview
-                        ? 'border-emerald-500/50 bg-emerald-950/10'
-                        : 'border-emerald-900/40 bg-[#020b08] hover:border-emerald-600/60 hover:bg-emerald-950/10'
+                        ? 'border-teal-400 bg-teal-50'
+                        : 'border-slate-300 bg-white hover:border-teal-400 hover:bg-slate-50'
                       }`}
                   >
                     {fotoPreview ? (
@@ -803,11 +805,11 @@ export default function LandslideDashboard() {
                       />
                     ) : (
                       <>
-                        <svg className="w-8 h-8 text-emerald-700" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                        <svg className="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
                         </svg>
-                        <span className="text-[11px] text-slate-400">Klik untuk pilih gambar</span>
-                        <span className="text-[10px] text-slate-600">atau seret & lepas file di sini</span>
+                        <span className="text-[11px] text-slate-500">Klik untuk pilih gambar</span>
+                        <span className="text-[10px] text-slate-400">atau seret & lepas file di sini</span>
                       </>
                     )}
                   </label>
@@ -835,7 +837,7 @@ export default function LandslideDashboard() {
                     <button
                       type="button"
                       onClick={() => { setFotoFile(null); setFotoPreview(null); }}
-                      className="mt-2 w-full py-1.5 rounded-lg border border-red-800/40 bg-red-950/20 text-[11px] text-red-400 hover:bg-red-950/40 transition cursor-pointer"
+                      className="mt-2 w-full py-1.5 rounded-lg border border-red-200 bg-red-50 text-[11px] text-red-600 hover:bg-red-100 transition cursor-pointer"
                     >
                       🗑 Hapus Foto
                     </button>
@@ -845,7 +847,7 @@ export default function LandslideDashboard() {
 
                 <button
                   type="submit"
-                  className="w-full py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold tracking-wide shadow-md transition duration-150 cursor-pointer text-center"
+                  className="w-full py-2.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-bold tracking-wide transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-teal-500/30 cursor-pointer text-center"
                 >
                   Kirim Laporan Bencana
                 </button>
@@ -856,32 +858,32 @@ export default function LandslideDashboard() {
           {/* TAB 3: ADMIN PANEL (BPBD MODERATOR) */}
           {activeTab === 'admin' && (
             <div className="space-y-4">
-              
+
               {!adminAuth ? (
                 /* Formulir Login Admin */
                 <form onSubmit={handleAdminLogin} className="space-y-3 text-xs">
-                  <div className="rounded-xl border border-emerald-900/30 bg-[#041911]/30 p-3.5 mb-2">
-                    <h3 className="text-sm font-bold text-white mb-1">Otorisasi Admin BPBD</h3>
-                    <p className="text-slate-400">Silakan masukkan password administrasi BPBD untuk memvalidasi laporan warga.</p>
+                  <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-3.5 mb-2">
+                    <h3 className="text-sm font-bold text-teal-900 mb-1">Otorisasi Admin BPBD</h3>
+                    <p className="text-slate-600">Silakan masukkan password administrasi BPBD untuk memvalidasi laporan warga.</p>
                   </div>
-                  
+
                   {adminError && (
-                    <div className="p-2 rounded bg-red-950/40 border border-red-500/50 text-red-300">
+                    <div className="p-2 rounded bg-red-50 border border-red-200 text-red-700">
                       {adminError}
                     </div>
                   )}
 
                   <div>
-                    <label className="block text-slate-400 font-semibold mb-1">Password Admin</label>
+                    <label className="block text-slate-700 font-semibold mb-1">Password Admin</label>
                     <input
                       type="password"
                       required
                       placeholder="Masukkan password admin..."
                       value={adminPassword}
                       onChange={(e) => setAdminPassword(e.target.value)}
-                      className="w-full rounded-lg border border-emerald-900/40 bg-[#020b08] px-3.5 py-2.5 text-white focus:border-emerald-500 focus:outline-none"
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-slate-800 focus:border-emerald-500 focus:outline-none"
                     />
-                    <p className="text-[10px] text-slate-500 mt-1">Petunjuk: Gunakan password <code className="bg-emerald-950 px-1 rounded text-emerald-400">admin123</code></p>
+                    <p className="text-[10px] text-slate-500 mt-1">Petunjuk: Gunakan password <code className="bg-slate-100 px-1 border border-slate-200 rounded text-teal-700">admin123</code></p>
                   </div>
 
                   <button
@@ -894,14 +896,14 @@ export default function LandslideDashboard() {
               ) : (
                 /* Dashboard Modul Admin */
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center border-b border-emerald-900/20 pb-3">
+                  <div className="flex justify-between items-center border-b border-slate-200 pb-3">
                     <div>
-                      <h3 className="text-sm font-bold text-white">BPBD Moderator</h3>
-                      <span className="text-[9px] text-emerald-400 font-semibold uppercase tracking-wider">Validasi Laporan Lapangan</span>
+                      <h3 className="text-sm font-bold text-teal-900">BPBD Moderator</h3>
+                      <span className="text-[9px] text-teal-700 font-semibold uppercase tracking-wider">Validasi Laporan Lapangan</span>
                     </div>
                     <button
                       onClick={() => setAdminAuth(false)}
-                      className="px-2.5 py-1 bg-red-950/80 hover:bg-red-900 border border-red-800 text-[10px] text-red-300 font-semibold rounded cursor-pointer transition"
+                      className="px-2.5 py-1 bg-red-50 hover:bg-red-100 border border-red-200 text-[10px] text-red-600 font-semibold rounded cursor-pointer transition"
                     >
                       Keluar
                     </button>
@@ -909,8 +911,8 @@ export default function LandslideDashboard() {
 
                   {/* List Laporan di Admin */}
                   <div className="space-y-3">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-450">Verifikasi Laporan Masuk</h4>
-                    
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-teal-700">Verifikasi Laporan Masuk</h4>
+
                     {!allLaporanAdmin || !allLaporanAdmin.features || allLaporanAdmin.features.length === 0 ? (
                       <p className="text-center text-xs text-slate-500 py-6">Tidak ada laporan masuk dari warga.</p>
                     ) : (
@@ -922,26 +924,24 @@ export default function LandslideDashboard() {
                           return (
                             <div
                               key={props.id_laporan}
-                              className={`rounded-xl border p-3.5 space-y-3 transition bg-[#041710]/40 ${
-                                props.status_validasi
-                                  ? 'border-emerald-900/20'
-                                  : 'border-amber-600/50 shadow-md shadow-amber-950/20'
-                              }`}
+                              className={`rounded-xl border p-3.5 space-y-3 transition bg-white shadow-sm ${props.status_validasi
+                                  ? 'border-slate-200'
+                                  : 'border-amber-300 shadow-md shadow-amber-500/10'
+                                }`}
                             >
                               <div className="flex justify-between items-start">
-                                <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase ${
-                                  props.status_validasi
-                                    ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/40'
-                                    : 'bg-amber-950 text-amber-400 border border-amber-800/40 animate-pulse'
-                                }`}>
+                                <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase ${props.status_validasi
+                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                    : 'bg-amber-50 text-amber-700 border border-amber-200 animate-pulse'
+                                  }`}>
                                   {props.status_validasi ? 'Valid (Tampil)' : 'Pending'}
                                 </span>
-                                <span className="text-[10px] text-slate-400 font-mono">
+                                <span className="text-[10px] text-slate-500 font-mono">
                                   ID: {props.id_laporan}
                                 </span>
                               </div>
 
-                              <p className="text-xs text-slate-200 leading-relaxed font-medium">
+                              <p className="text-xs text-slate-800 leading-relaxed font-medium">
                                 "{props.deskripsi}"
                               </p>
 
@@ -949,19 +949,19 @@ export default function LandslideDashboard() {
                                 <img
                                   src={props.foto_bukti}
                                   alt="Bukti Bencana"
-                                  className="w-full h-24 object-cover rounded-lg border border-emerald-900/20 shadow-sm"
+                                  className="w-full h-24 object-cover rounded-lg border border-slate-200 shadow-sm"
                                   onError={(e) => { e.target.style.display = 'none'; }}
                                 />
                               )}
 
-                              <div className="flex items-center justify-between text-[10px] text-slate-400 border-t border-emerald-900/10 pt-2">
+                              <div className="flex items-center justify-between text-[10px] text-slate-500 border-t border-slate-100 pt-2">
                                 <span>Lat/Lng: {lat.toFixed(5)}, {lng.toFixed(5)}</span>
                                 <button
                                   onClick={() => {
                                     // Fokus kamera peta ke titik laporan
                                     setActivePoint(laporan);
                                   }}
-                                  className="text-emerald-400 hover:text-emerald-300 font-semibold cursor-pointer underline"
+                                  className="text-teal-600 hover:text-teal-700 font-semibold cursor-pointer underline"
                                 >
                                   Fokus Peta
                                 </button>
@@ -979,11 +979,10 @@ export default function LandslideDashboard() {
                                 )}
                                 <button
                                   onClick={() => handleDeleteReport(props.id_laporan)}
-                                  className={`py-1 px-3 border font-semibold rounded text-[11px] cursor-pointer text-center transition ${
-                                    props.status_validasi
-                                      ? 'col-span-2 bg-red-950/40 border-red-900/50 text-red-400 hover:bg-red-900/30'
-                                      : 'bg-red-950/40 border-red-900/50 text-red-400 hover:bg-red-900/30'
-                                  }`}
+                                  className={`py-1 px-3 border font-semibold rounded text-[11px] cursor-pointer text-center transition ${props.status_validasi
+                                      ? 'col-span-2 bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
+                                      : 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
+                                    }`}
                                 >
                                   Hapus Laporan
                                 </button>
@@ -1003,19 +1002,19 @@ export default function LandslideDashboard() {
         </div>
 
         {/* Footer SIG */}
-        <div className="p-4 border-t border-emerald-900/20 bg-[#020b08] text-center text-[10px] text-emerald-600/80">
+        <div className="p-4 border-t border-slate-200 bg-slate-50 text-center text-[10px] text-slate-500">
           <span>&copy; {new Date().getFullYear()} CoreSlide &bull; Kelompok SIG</span>
         </div>
       </aside>
 
       {/* PANEL PETA INTERAKTIF LEAFLET */}
       <main className="relative flex-1">
-        
+
         {/* Floating Reset Button */}
         {activePoint && (
           <button
             onClick={() => setActivePoint(null)}
-            className="absolute top-4 right-4 z-9999 flex items-center gap-1.5 rounded-lg bg-[#041a12]/95 border border-emerald-800 px-3.5 py-2.5 text-xs font-semibold text-white shadow-2xl hover:bg-emerald-900 cursor-pointer backdrop-blur-md transition duration-200"
+            className="absolute top-4 right-4 z-9999 flex items-center gap-1.5 rounded-lg bg-white/95 border border-slate-200 px-3.5 py-2.5 text-xs font-semibold text-slate-800 shadow-xl hover:bg-slate-50 cursor-pointer backdrop-blur-md transition duration-200"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
@@ -1026,47 +1025,44 @@ export default function LandslideDashboard() {
 
         {/* Info Label Form Aktif */}
         {activeTab === 'laporkan' && (
-          <div className="absolute top-4 left-4 z-9999 p-3 rounded-lg bg-emerald-950/95 border border-emerald-600 shadow-2xl backdrop-blur-md max-w-72">
-            <h4 className="text-[10px] font-bold uppercase tracking-wider text-emerald-450 mb-0.5 flex items-center gap-1.5 animate-pulse">
-              <span className="h-2 w-2 rounded-full bg-emerald-450"></span> Mode Klik Peta Aktif
+          <div className="absolute top-4 left-4 z-9999 p-3 rounded-lg bg-white/95 border border-teal-500 shadow-2xl backdrop-blur-md max-w-72">
+            <h4 className="text-[10px] font-bold uppercase tracking-wider text-teal-700 mb-0.5 flex items-center gap-1.5 animate-pulse">
+              <span className="h-2 w-2 rounded-full bg-teal-600"></span> Mode Klik Peta Aktif
             </h4>
-            <p className="text-[10px] text-slate-300 leading-tight">
+            <p className="text-[10px] text-slate-600 leading-tight">
               Arahkan kursor ke titik longsor di peta, klik kiri, koordinat Lintang & Bujur akan otomatis dimasukkan pada formulir.
             </p>
           </div>
         )}
 
         {/* Floating Map Style Switcher (Satellite / Topo / Streets) */}
-        <div className="absolute bottom-4 left-4 z-9999 flex flex-col gap-1.5 rounded-xl bg-[#03120d]/95 border border-emerald-900/60 p-2.5 shadow-2xl backdrop-blur-md">
-          <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-400 px-1.5">Tipe Peta (Base Map)</span>
+        <div className="absolute bottom-4 left-4 z-9999 flex flex-col gap-1.5 rounded-xl bg-white/95 border border-slate-200 p-2.5 shadow-xl backdrop-blur-md">
+          <span className="text-[9px] font-bold uppercase tracking-wider text-teal-700 px-1.5">Tipe Peta (Base Map)</span>
           <div className="flex gap-1">
             <button
               onClick={() => setMapStyle('satellite')}
-              className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold cursor-pointer transition duration-150 ${
-                mapStyle === 'satellite'
-                  ? 'bg-emerald-600 text-white shadow shadow-emerald-800'
-                  : 'text-slate-400 hover:text-white hover:bg-emerald-900/40'
-              }`}
+              className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold cursor-pointer transition duration-150 ${mapStyle === 'satellite'
+                  ? 'bg-teal-600 text-white shadow-md shadow-teal-500/30'
+                  : 'text-slate-600 hover:text-teal-800 hover:bg-teal-50'
+                }`}
             >
               Google Satelit
             </button>
             <button
               onClick={() => setMapStyle('topography')}
-              className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold cursor-pointer transition duration-150 ${
-                mapStyle === 'topography'
-                  ? 'bg-emerald-600 text-white shadow shadow-emerald-800'
-                  : 'text-slate-400 hover:text-white hover:bg-emerald-900/40'
-              }`}
+              className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold cursor-pointer transition duration-150 ${mapStyle === 'topography'
+                  ? 'bg-teal-600 text-white shadow-md shadow-teal-500/30'
+                  : 'text-slate-600 hover:text-teal-800 hover:bg-teal-50'
+                }`}
             >
               Stadia Terrain
             </button>
             <button
               onClick={() => setMapStyle('streets')}
-              className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold cursor-pointer transition duration-150 ${
-                mapStyle === 'streets'
-                  ? 'bg-emerald-600 text-white shadow shadow-emerald-800'
-                  : 'text-slate-400 hover:text-white hover:bg-emerald-900/40'
-              }`}
+              className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold cursor-pointer transition duration-150 ${mapStyle === 'streets'
+                  ? 'bg-teal-600 text-white shadow-md shadow-teal-500/30'
+                  : 'text-slate-600 hover:text-teal-800 hover:bg-teal-50'
+                }`}
             >
               OpenStreetMap
             </button>
@@ -1116,8 +1112,8 @@ export default function LandslideDashboard() {
               }}
             >
               <Popup>
-                <div className="text-xs text-emerald-300">
-                  <h4 className="font-bold text-sm text-white">Batas Kawasan Hutan TNBBS</h4>
+                <div className="text-xs text-slate-600">
+                  <h4 className="font-bold text-sm text-teal-900">Batas Kawasan Hutan TNBBS</h4>
                   <p className="mt-1 leading-normal">Taman Nasional Bukit Barisan Selatan (Lampung). Area hutan lindung berbatasan langsung dengan jalur utama.</p>
                 </div>
               </Popup>
@@ -1135,7 +1131,7 @@ export default function LandslideDashboard() {
                   pathOptions={{
                     color: styles.color,
                     fillColor: styles.fillColor,
-                    fillOpacity: 0.55,
+                    fillOpacity: 0.6,
                     weight: 1.5
                   }}
                   eventHandlers={{
@@ -1143,19 +1139,19 @@ export default function LandslideDashboard() {
                       e.target.setStyle({ fillOpacity: 0.75, weight: 2.5 });
                     },
                     mouseout: (e) => {
-                      e.target.setStyle({ fillOpacity: 0.55, weight: 1.5 });
+                      e.target.setStyle({ fillOpacity: 0.6, weight: 1.5 });
                     }
                   }}
                 >
                   <Popup>
-                    <div className="text-xs min-w-44 text-slate-100">
-                      <div className="border-b border-emerald-900/30 pb-1 mb-1.5 flex justify-between items-center">
-                        <h4 className="font-bold text-white text-sm">Zonasi Kerawanan</h4>
-                        <span className="text-[9px] font-semibold text-slate-400">ID: {feature.properties.id}</span>
+                    <div className="text-xs min-w-44 text-slate-600">
+                      <div className="border-b border-slate-200 pb-1 mb-1.5 flex justify-between items-center">
+                        <h4 className="font-bold text-teal-900 text-sm">Zonasi Kerawanan</h4>
+                        <span className="text-[9px] font-semibold text-slate-500">ID: {feature.properties.id}</span>
                       </div>
-                      <p className="leading-relaxed"><strong className="text-emerald-400">Kelas Kerawanan:</strong> {feature.properties.kelas_rawan}</p>
-                      <p className="leading-relaxed"><strong className="text-emerald-400">Total Skor (Weighted Sum):</strong> {feature.properties.skor_total}</p>
-                      <p className="leading-relaxed"><strong className="text-emerald-400">Luas Area:</strong> {feature.properties.luas_area} Ha</p>
+                      <p className="leading-relaxed"><strong className="text-teal-700">Kelas Kerawanan:</strong> {feature.properties.kelas_rawan}</p>
+                      <p className="leading-relaxed"><strong className="text-teal-700">Total Skor (Weighted Sum):</strong> {feature.properties.skor_total}</p>
+                      <p className="leading-relaxed"><strong className="text-teal-700">Luas Area:</strong> {feature.properties.luas_area} Ha</p>
                     </div>
                   </Popup>
                 </Polygon>
@@ -1185,30 +1181,30 @@ export default function LandslideDashboard() {
                   }}
                 >
                   <Popup>
-                    <div className="flex flex-col gap-2 min-w-56 text-slate-100">
-                      <div className="border-b border-emerald-900/40 pb-1.5">
-                        <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide mb-1 bg-red-950/80 text-red-400 border border-red-900/30">
+                    <div className="flex flex-col gap-2 min-w-56 text-slate-800">
+                      <div className="border-b border-slate-200 pb-1.5">
+                        <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide mb-1 bg-red-50 text-red-600 border border-red-200">
                           Bencana Longsor (Historis)
                         </span>
-                        <h4 className="font-bold text-sm leading-tight text-white">{feature.properties.lokasi_detail}</h4>
+                        <h4 className="font-bold text-sm leading-tight text-teal-900">{feature.properties.lokasi_detail}</h4>
                       </div>
 
-                      <div className="text-xs space-y-1.5 text-slate-350">
+                      <div className="text-xs space-y-1.5 text-slate-600">
                         {feature.properties.foto_kondisi && (
                           <img
                             src={feature.properties.foto_kondisi}
                             alt="Kondisi Longsor"
-                            className="w-full h-24 object-cover rounded-lg border border-emerald-900/20 shadow"
+                            className="w-full h-24 object-cover rounded-lg border border-slate-200 shadow"
                             onError={(e) => { e.target.style.display = 'none'; }}
                           />
                         )}
                         <p className="leading-relaxed">
-                          <strong className="text-emerald-400 font-semibold">Tingkat Kerusakan:</strong> {feature.properties.tingkat_kerusakan}
+                          <strong className="text-teal-700 font-semibold">Tingkat Kerusakan:</strong> {feature.properties.tingkat_kerusakan}
                         </p>
                         <p className="leading-relaxed">
-                          <strong className="text-emerald-400 font-semibold">Tanggal Kejadian:</strong> {feature.properties.tanggal_kejadian}
+                          <strong className="text-teal-700 font-semibold">Tanggal Kejadian:</strong> {feature.properties.tanggal_kejadian}
                         </p>
-                        <div className="flex items-center gap-2 pt-1 text-[9px] text-slate-500 border-t border-emerald-900/20">
+                        <div className="flex items-center gap-2 pt-1 text-[9px] text-slate-500 border-t border-slate-200">
                           <span>Lat: {lat.toFixed(5)}</span>
                           <span>Long: {lng.toFixed(5)}</span>
                         </div>
@@ -1229,15 +1225,15 @@ export default function LandslideDashboard() {
                 icon={createMedicalIcon()}
               >
                 <Popup>
-                  <div className="text-xs min-w-48 text-slate-100">
-                    <div className="border-b border-emerald-900/30 pb-1 mb-1.5">
-                      <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-blue-950 text-blue-400 border border-blue-900/40">
+                  <div className="text-xs min-w-48 text-slate-800">
+                    <div className="border-b border-slate-200 pb-1 mb-1.5">
+                      <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-blue-50 text-blue-700 border border-blue-200">
                         {posko.tipe}
                       </span>
-                      <h4 className="font-bold text-white text-sm mt-1">{posko.nama}</h4>
+                      <h4 className="font-bold text-teal-900 text-sm mt-1">{posko.nama}</h4>
                     </div>
-                    <p className="text-slate-300 leading-normal mb-1">{posko.deskripsi}</p>
-                    <div className="text-[9px] text-slate-550 flex gap-2 border-t border-emerald-900/20 pt-1.5 mt-1.5 font-mono">
+                    <p className="text-slate-600 leading-normal mb-1">{posko.deskripsi}</p>
+                    <div className="text-[9px] text-slate-500 flex gap-2 border-t border-slate-200 pt-1.5 mt-1.5 font-mono">
                       <span>Lat: {posko.koordinat[0]}</span>
                       <span>Long: {posko.koordinat[1]}</span>
                     </div>
@@ -1249,52 +1245,54 @@ export default function LandslideDashboard() {
 
           {/* 5. LAYER Laporan Kerusakan Warga (Point dari Database) */}
           {layerControl.laporan && !loading && laporanWarga?.features && (
-            laporanWarga.features.map((feature) => {
-              const props = feature.properties;
-              const [lng, lat] = feature.geometry.coordinates;
-              const isSelected = activePoint && activePoint.properties.id_laporan === props.id_laporan;
+            laporanWarga.features
+              .filter(feature => feature.geometry && Array.isArray(feature.geometry.coordinates))
+              .map((feature) => {
+                const props = feature.properties;
+                const [lng, lat] = feature.geometry.coordinates;
+                const isSelected = activePoint && activePoint.properties.id_laporan === props.id_laporan;
 
-              return (
-                <Marker
-                  key={props.id_laporan}
-                  position={[lat, lng]}
-                  icon={createWarningIcon(isSelected)}
-                  eventHandlers={{
-                    click: () => setActivePoint(feature)
-                  }}
-                >
-                  <Popup>
-                    <div className="flex flex-col gap-2 min-w-56 text-slate-100">
-                      <div className="border-b border-emerald-900/40 pb-1.5">
-                        <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-amber-950 text-amber-400 border border-amber-900/40">
-                          Laporan Warga (Tervalidasi)
-                        </span>
-                        <h4 className="font-semibold text-xs leading-tight text-white mt-1">" {props.deskripsi} "</h4>
-                      </div>
+                return (
+                  <Marker
+                    key={props.id_laporan}
+                    position={[lat, lng]}
+                    icon={createWarningIcon(isSelected)}
+                    eventHandlers={{
+                      click: () => setActivePoint(feature)
+                    }}
+                  >
+                    <Popup>
+                      <div className="flex flex-col gap-2 min-w-56 text-slate-800">
+                        <div className="border-b border-slate-200 pb-1.5">
+                          <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-amber-50 text-amber-700 border border-amber-200">
+                            Laporan Warga (Tervalidasi)
+                          </span>
+                          <h4 className="font-semibold text-xs leading-tight text-slate-800 mt-1">" {props.deskripsi} "</h4>
+                        </div>
 
-                      <div className="text-xs space-y-1.5 text-slate-350">
-                        {props.foto_bukti && (
-                          <img
-                            src={props.foto_bukti}
-                            alt="Laporan Warga"
-                            className="w-full h-24 object-cover rounded-lg border border-emerald-900/20 shadow"
-                            onError={(e) => { e.target.style.display = 'none'; }}
-                          />
-                        )}
-                        <p className="text-[10px] text-slate-450">
-                          <strong className="text-emerald-400">Dilaporkan pada:</strong><br />
-                          {new Date(props.waktu_kirim).toLocaleString('id-ID')}
-                        </p>
-                        <div className="flex items-center gap-2 pt-1 text-[9px] text-slate-500 border-t border-emerald-900/20">
-                          <span>Lat: {lat.toFixed(5)}</span>
-                          <span>Long: {lng.toFixed(5)}</span>
+                        <div className="text-xs space-y-1.5 text-slate-600">
+                          {props.foto_bukti && (
+                            <img
+                              src={props.foto_bukti}
+                              alt="Laporan Warga"
+                              className="w-full h-24 object-cover rounded-lg border border-slate-200 shadow"
+                              onError={(e) => { e.target.style.display = 'none'; }}
+                            />
+                          )}
+                          <p className="text-[10px] text-slate-500">
+                            <strong className="text-teal-700">Dilaporkan pada:</strong><br />
+                            {new Date(props.waktu_kirim).toLocaleString('id-ID')}
+                          </p>
+                          <div className="flex items-center gap-2 pt-1 text-[9px] text-slate-500 border-t border-slate-200">
+                            <span>Lat: {lat.toFixed(5)}</span>
+                            <span>Long: {lng.toFixed(5)}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </Popup>
-                </Marker>
-              );
-            })
+                    </Popup>
+                  </Marker>
+                );
+              })
           )}
 
           {/* Temporary Marker untuk Koordinat yang dipilih saat melapor */}
@@ -1305,8 +1303,8 @@ export default function LandslideDashboard() {
             >
               <Popup>
                 <div className="text-center text-xs p-1">
-                  <span className="font-bold text-white block">Posisi Laporan Dipilih</span>
-                  <span className="text-[9px] text-emerald-450 block font-mono">
+                  <span className="font-bold text-teal-900 block">Posisi Laporan Dipilih</span>
+                  <span className="text-[9px] text-teal-700 block font-mono">
                     {formReport.latitude}, {formReport.longitude}
                   </span>
                 </div>
