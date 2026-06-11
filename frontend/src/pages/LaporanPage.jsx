@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 const createPinIcon = () => L.divIcon({
   html: `<div style="position:relative;display:flex;align-items:center;justify-content:center">
            <div style="position:absolute;width:32px;height:32px;border-radius:50%;background:rgba(16,185,129,0.3);animation:ping 1s cubic-bezier(0,0,0.2,1) infinite"></div>
-           <div style="width:22px;height:22px;border-radius:50%;background:#10b981;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.5)"></div>
+           <div style="width:22px;height:22px;border-radius:50%;background:#f7b464;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.5)"></div>
          </div>`,
   className: '', iconSize: [24, 24], iconAnchor: [12, 12],
 });
@@ -59,7 +59,7 @@ export default function LaporanPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f6f5] pt-16">
+    <div className="min-h-screen bg-gradient-to-br from-[#8ba8be] via-[#e2c7a7] to-[#f7b464] pt-16">
       <div className="max-w-6xl mx-auto px-4 py-8">
 
         {/* Page header */}
@@ -78,8 +78,8 @@ export default function LaporanPage() {
           </div>
           {session && (
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full
-              bg-emerald-50 border border-emerald-250 border-emerald-200 text-xs text-emerald-750 text-emerald-700">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              bg-slate-50 border border-emerald-250 border-slate-200 text-xs text-slate-700 text-[#d97706]">
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
               Dilaporkan oleh: <strong>{session.nama}</strong>
             </div>
           )}
@@ -90,7 +90,7 @@ export default function LaporanPage() {
           {/* ── MAP PANEL ── */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <div className="w-2 h-2 rounded-full bg-slate-500 animate-pulse" />
               <p className="text-xs font-semibold text-slate-500">
                 Klik peta untuk menentukan lokasi kejadian longsor
               </p>
@@ -113,7 +113,7 @@ export default function LaporanPage() {
               {[['Lintang (Lat)', form.latitude, '-5.xxxxxx'], ['Bujur (Lng)', form.longitude, '104.xxxxxx']].map(([lbl, val, ph]) => (
                 <div key={lbl} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
                   <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">{lbl}</div>
-                  <div className={`font-mono text-sm font-bold ${val ? 'text-emerald-600' : 'text-slate-300'}`}>
+                  <div className={`font-mono text-sm font-bold ${val ? 'text-[#d97706]' : 'text-slate-300'}`}>
                     {val || ph}
                   </div>
                 </div>
@@ -127,7 +127,7 @@ export default function LaporanPage() {
             {message && (
               <div className={`flex items-start gap-2 p-3.5 rounded-xl text-sm border
                 ${message.type === 'success'
-                  ? 'bg-emerald-50 border-emerald-200 text-emerald-750 text-emerald-700'
+                  ? 'bg-slate-50 border-slate-200 text-slate-700 text-[#d97706]'
                   : 'bg-red-50 border-red-200 text-red-750 text-red-700'}`}>
                 <svg className="w-4 h-4 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                   {message.type === 'success'
@@ -149,7 +149,7 @@ export default function LaporanPage() {
                   value={form.tanggal_kejadian}
                   onChange={e => setForm(p => ({ ...p, tanggal_kejadian: e.target.value }))}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50
-                    px-4 py-3 text-sm text-slate-800 focus:border-emerald-500 focus:bg-white focus:outline-none
+                    px-4 py-3 text-sm text-slate-800 focus:border-[#8ba8be] focus:bg-white focus:outline-none
                     transition"
                 />
               </div>
@@ -165,7 +165,7 @@ export default function LaporanPage() {
                   onChange={e => setForm(p => ({ ...p, deskripsi: e.target.value }))}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50
                     px-4 py-3 text-sm text-slate-800 placeholder-slate-400
-                    focus:border-emerald-500 focus:bg-white focus:outline-none transition resize-none"
+                    focus:border-[#8ba8be] focus:bg-white focus:outline-none transition resize-none"
                 />
               </div>
 
@@ -179,7 +179,7 @@ export default function LaporanPage() {
                   className={`flex flex-col items-center justify-center gap-2 w-full rounded-xl
                     border-2 border-dashed cursor-pointer transition-all py-6 px-3 text-center
                     ${fotoPreview
-                      ? 'border-emerald-500/50 bg-emerald-50/50'
+                      ? 'border-[#8ba8be]/50 bg-slate-50/50'
                       : 'border-slate-200 bg-slate-50 hover:border-slate-350 hover:border-slate-300 hover:bg-slate-100/50'}`}>
                   {fotoPreview
                     ? <img src={fotoPreview} alt="Preview" className="w-full max-h-40 object-cover rounded-lg" />

@@ -37,14 +37,14 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-20
-      bg-[#f4f6f5] relative overflow-hidden">
+      bg-gradient-to-br from-[#8ba8be] via-[#e2c7a7] to-[#f7b464] relative overflow-hidden">
 
       {/* Background glow */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px]
-          bg-emerald-100/50 rounded-full blur-[120px]" />
+          bg-[#8ba8be]/20 rounded-full blur-[120px]" />
         <div className="absolute bottom-0 right-0 w-72 h-72
-          bg-teal-100/40 rounded-full blur-[80px]" />
+          bg-[#f7b464]/20 rounded-full blur-[80px]" />
       </div>
 
       <div className="relative w-full max-w-md">
@@ -52,8 +52,8 @@ export default function LoginPage() {
         {/* Logo header */}
         <div className="text-center mb-8">
           <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl
-            bg-gradient-to-tr from-emerald-600 to-teal-400
-            shadow-xl shadow-emerald-500/20 mb-4 animate-bounce-subtle">
+            bg-gradient-to-tr from-[#8ba8be] to-[#f7b464]
+            shadow-xl shadow-[#8ba8be]/20 mb-4 animate-bounce-subtle">
             <svg viewBox="0 0 24 24" className="h-8 w-8 text-white" fill="none" stroke="currentColor" strokeWidth={2.5}>
               <path d="M3 18c4-1 6-5 9-9s3-6 7-7" strokeLinecap="round" />
               <path d="M2 20h20" strokeLinecap="round" />
@@ -76,7 +76,7 @@ export default function LoginPage() {
               onClick={() => { setTab('warga'); setError(''); }}
               className={`py-4 text-sm font-bold tracking-wide transition-all
                 ${tab === 'warga'
-                  ? 'bg-emerald-50/50 text-emerald-700 border-b-2 border-emerald-500'
+                  ? 'bg-slate-50/50 text-[#d97706] border-b-2 border-[#8ba8be]'
                   : 'text-slate-400 hover:text-slate-600'
                 }`}
             >
@@ -91,7 +91,7 @@ export default function LoginPage() {
               onClick={() => { setTab('admin'); setError(''); }}
               className={`py-4 text-sm font-bold tracking-wide transition-all
                 ${tab === 'admin'
-                  ? 'bg-emerald-50/50 text-emerald-700 border-b-2 border-emerald-500'
+                  ? 'bg-slate-50/50 text-[#d97706] border-b-2 border-[#8ba8be]'
                   : 'text-slate-400 hover:text-slate-600'
                 }`}
             >
@@ -127,7 +127,7 @@ export default function LoginPage() {
                     onChange={e => setEmail(e.target.value)}
                     className="w-full rounded-xl border border-slate-200 bg-slate-50
                       px-4 py-3 text-sm text-slate-800 placeholder-slate-405 placeholder-slate-400
-                      focus:bg-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition"
+                      focus:bg-white focus:border-[#8ba8be] focus:ring-1 focus:ring-[#8ba8be]/30 focus:outline-none transition"
                   />
                 </div>
                 <div>
@@ -140,7 +140,7 @@ export default function LoginPage() {
                       onChange={e => setPassword(e.target.value)}
                       className="w-full rounded-xl border border-slate-200 bg-slate-50
                         px-4 py-3 pr-12 text-sm text-slate-800 placeholder-slate-405 placeholder-slate-400
-                        focus:bg-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition"
+                        focus:bg-white focus:border-[#8ba8be] focus:ring-1 focus:ring-[#8ba8be]/30 focus:outline-none transition"
                     />
                     <button type="button" onClick={() => setShowPass(!showPass)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-450 text-slate-400 hover:text-slate-600 transition">
@@ -163,7 +163,7 @@ export default function LoginPage() {
                     onChange={e => setAdminPass(e.target.value)}
                     className="w-full rounded-xl border border-slate-200 bg-slate-50
                       px-4 py-3 pr-12 text-sm text-slate-800 placeholder-slate-405 placeholder-slate-400
-                      focus:bg-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 focus:outline-none transition"
+                      focus:bg-white focus:border-[#8ba8be] focus:ring-1 focus:ring-[#8ba8be]/30 focus:outline-none transition"
                   />
                   <button type="button" onClick={() => setShowPass(!showPass)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-450 text-slate-400 hover:text-slate-600 transition">
@@ -181,7 +181,7 @@ export default function LoginPage() {
               disabled={loading}
               className={`w-full py-3.5 rounded-xl text-sm font-bold tracking-wide shadow-lg
                 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2
-                bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-500/20 text-white
+                bg-gradient-to-r from-[#8ba8be] to-[#f7b464] hover:from-[#7a96ab] hover:to-[#e5a353] shadow-[#8ba8be]/20 text-white
                 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
             >
               {loading && (
@@ -198,7 +198,7 @@ export default function LoginPage() {
           {tab === 'warga' && (
             <div className="px-7 pb-6 text-center text-xs text-slate-500">
               Belum punya akun?{' '}
-              <Link to="/register" className="text-emerald-600 hover:text-emerald-700 font-bold transition">
+              <Link to="/register" className="text-[#d97706] hover:text-[#d97706] font-bold transition">
                 Daftar sekarang
               </Link>
             </div>

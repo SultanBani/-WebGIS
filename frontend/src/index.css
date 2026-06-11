@@ -30,7 +30,7 @@ body {
 .leaflet-popup-content-wrapper, .leaflet-popup-tip {
   background: #ffffff !important;
   color: #1e293b !important;
-  border: 1.5px solid #10b981; /* Emerald 500 */
+  border: 1.5px solid #f7b464; /* Emerald 500 */
   border-radius: 0.75rem !important;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1) !important;
 }
@@ -58,5 +58,5 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #10b981; /* Emerald 500 */
+  background: #f7b464; /* Emerald 500 */
 }

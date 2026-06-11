@@ -37,8 +37,8 @@ export default function Navbar() {
       {/* Logo */}
       <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
         <div className="flex h-9 w-9 items-center justify-center rounded-xl
-          bg-gradient-to-tr from-emerald-500 to-teal-400
-          shadow-lg shadow-emerald-600/20 group-hover:scale-105 transition-transform">
+          bg-gradient-to-tr from-[#8ba8be] to-[#f7b464]
+          shadow-lg shadow-[#8ba8be]/20 group-hover:scale-105 transition-transform">
           <svg viewBox="0 0 24 24" className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth={2.5}>
             <path d="M3 18c4-1 6-5 9-9s3-6 7-7" strokeLinecap="round" />
             <path d="M2 20h20" strokeLinecap="round" />
@@ -49,10 +49,10 @@ export default function Navbar() {
         </div>
         <div className="hidden sm:block">
           <span className="text-base font-extrabold tracking-tight
-            bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
+            bg-gradient-to-r from-[#8ba8be] to-[#f7b464] bg-clip-text text-transparent">
             CoreSlide
           </span>
-          <div className="text-[9px] font-bold uppercase tracking-widest text-emerald-600 leading-none">
+          <div className="text-[9px] font-bold uppercase tracking-widest text-[#d97706] leading-none">
             WebGIS Mitigasi Longsor Jalur Liwa-Krui
           </div>
         </div>
@@ -68,7 +68,7 @@ export default function Navbar() {
               to={link.to}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-150
                 ${isActive(link.to)
-                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/50'
+                  ? 'bg-slate-50 text-[#d97706] border border-slate-200/50'
                   : 'text-slate-655 text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 }`}
             >
@@ -86,10 +86,10 @@ export default function Navbar() {
             {/* User badge */}
             <div className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold
               ${session.role === 'admin'
-                ? 'bg-teal-50 border-teal-200 text-teal-750 text-teal-700'
-                : 'bg-emerald-50 border-emerald-200 text-emerald-750 text-emerald-700'
+                ? 'bg-orange-50 border-orange-200 text-orange-700 text-[#d97706]'
+                : 'bg-slate-50 border-slate-200 text-slate-700 text-[#d97706]'
               }`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${session.role === 'admin' ? 'bg-teal-500' : 'bg-emerald-500'}`}></span>
+              <span className={`w-1.5 h-1.5 rounded-full ${session.role === 'admin' ? 'bg-orange-500' : 'bg-slate-500'}`}></span>
               {session.nama}
               <span className={`ml-0.5 uppercase text-[9px] font-bold tracking-wider opacity-70`}>
                 · {session.role}
@@ -111,9 +111,9 @@ export default function Navbar() {
           <Link
             to="/login"
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg
-              bg-gradient-to-r from-emerald-600 to-teal-600
-              hover:from-emerald-500 hover:to-teal-500
-              text-white text-sm font-bold shadow-md shadow-emerald-600/10
+              bg-gradient-to-r from-[#8ba8be] to-[#f7b464]
+              hover:from-[#7a96ab] hover:to-[#e5a353]
+              text-white text-sm font-bold shadow-md shadow-[#8ba8be]/10
               transition-all duration-150"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -150,7 +150,7 @@ export default function Navbar() {
                 onClick={() => setMenuOpen(false)}
                 className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition
                   ${isActive(link.to)
-                    ? 'bg-emerald-50 text-emerald-700'
+                    ? 'bg-slate-50 text-[#d97706]'
                     : 'text-slate-600 hover:bg-slate-100'
                   }`}
               >

@@ -49,14 +49,14 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f6f5] pt-16">
+    <div className="min-h-screen bg-gradient-to-br from-[#8ba8be] via-[#e2c7a7] to-[#f7b464] pt-16">
 
       {/* Toast */}
       {toast && (
         <div className={`fixed top-20 right-4 z-50 px-4 py-3 rounded-xl shadow-2xl text-sm font-semibold
           border transition-all animate-fade-in
           ${toast.type === 'success'
-            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+            ? 'bg-slate-50 border-slate-200 text-[#d97706]'
             : 'bg-red-50 border-red-200 text-red-700'}`}>
           {toast.text}
         </div>
@@ -67,8 +67,8 @@ export default function AdminPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500
-              flex items-center justify-center shadow-lg shadow-emerald-500/20">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#8ba8be] to-[#f7b464]
+              flex items-center justify-center shadow-lg shadow-[#8ba8be]/20">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
               </svg>
@@ -93,7 +93,7 @@ export default function AdminPage() {
           {[
             { label: 'Total Laporan', val: stats.total, color: 'from-white to-slate-50 border-slate-200', text: 'text-slate-800', icon: '📋' },
             { label: 'Menunggu Validasi', val: stats.menunggu, color: 'from-amber-50 to-orange-50/55 border-amber-200/60', text: 'text-amber-700', icon: '⏳' },
-            { label: 'Tervalidasi', val: stats.tervalidasi, color: 'from-emerald-50 to-teal-50/55 border-emerald-200/60', text: 'text-emerald-700', icon: '✅' },
+            { label: 'Tervalidasi', val: stats.tervalidasi, color: 'from-emerald-50 to-teal-50/55 border-slate-200/60', text: 'text-[#d97706]', icon: '✅' },
           ].map(s => (
             <div key={s.label}
               className={`rounded-2xl border bg-gradient-to-br ${s.color} p-5 shadow-sm`}>
@@ -110,7 +110,7 @@ export default function AdminPage() {
             <button key={val} onClick={() => setFilter(val)}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer border
                 ${filter === val
-                  ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-500/20'
+                  ? 'bg-[#7a96ab] border-emerald-600 text-white shadow-md shadow-[#8ba8be]/20'
                   : 'bg-white border-slate-200 text-slate-500 hover:text-slate-850 hover:text-slate-800 hover:bg-slate-50'}`}>
               {lbl}
             </button>
@@ -121,7 +121,7 @@ export default function AdminPage() {
         <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-xl">
           {loading ? (
             <div className="flex justify-center items-center py-20">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#8ba8be] border-t-transparent" />
             </div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-20 text-slate-400">
@@ -166,7 +166,7 @@ export default function AdminPage() {
                         <td className="px-4 py-3">
                           {p.status_validasi
                             ? <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full border
-                                bg-emerald-50 border-emerald-100 text-[10px] font-bold text-emerald-600">
+                                bg-slate-50 border-slate-200 text-[10px] font-bold text-[#d97706]">
                                 ✓ Valid
                               </span>
                             : <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full border
@@ -179,7 +179,7 @@ export default function AdminPage() {
                           <div className="flex gap-2">
                             {!p.status_validasi && (
                               <button onClick={() => handleValidate(p.id_laporan)}
-                                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500
+                                className="px-3 py-1.5 rounded-lg bg-[#7a96ab] hover:bg-slate-500
                                   text-[10px] font-bold text-white transition cursor-pointer whitespace-nowrap shadow-sm">
                                 ✓ Validasi
                               </button>

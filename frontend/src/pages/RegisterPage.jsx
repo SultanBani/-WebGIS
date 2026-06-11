@@ -35,13 +35,13 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-20
-      bg-[#f4f6f5] relative overflow-hidden">
+      bg-gradient-to-br from-[#8ba8be] via-[#e2c7a7] to-[#f7b464] relative overflow-hidden">
 
       {/* Background glow */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[500px]
-          bg-teal-100/40 rounded-full blur-[120px]" />
-        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-100/30 rounded-full blur-[80px]" />
+          bg-[#f7b464]/20 rounded-full blur-[120px]" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#8ba8be]/30 rounded-full blur-[80px]" />
       </div>
 
       <div className="relative w-full max-w-md">
@@ -49,8 +49,8 @@ export default function RegisterPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl
-            bg-gradient-to-tr from-teal-600 to-emerald-400
-            shadow-xl shadow-teal-500/20 mb-4 animate-bounce-subtle">
+            bg-gradient-to-tr from-[#f7b464] to-[#8ba8be]
+            shadow-xl shadow-[#f7b464]/20 mb-4 animate-bounce-subtle">
             <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM4 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 10.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
             </svg>
@@ -84,7 +84,7 @@ export default function RegisterPage() {
                 onChange={handleChange}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50
                   px-4 py-3 text-sm text-slate-800 placeholder-slate-400
-                  focus:bg-white focus:border-teal-500 focus:ring-1 focus:ring-teal-500/30 focus:outline-none transition"
+                  focus:bg-white focus:border-[#f7b464] focus:ring-1 focus:ring-[#f7b464]/30 focus:outline-none transition"
               />
             </div>
 
@@ -98,7 +98,7 @@ export default function RegisterPage() {
                 onChange={handleChange}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50
                   px-4 py-3 text-sm text-slate-800 placeholder-slate-400
-                  focus:bg-white focus:border-teal-500 focus:ring-1 focus:ring-teal-500/30 focus:outline-none transition"
+                  focus:bg-white focus:border-[#f7b464] focus:ring-1 focus:ring-[#f7b464]/30 focus:outline-none transition"
               />
             </div>
 
@@ -113,7 +113,7 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50
                     px-4 py-3 pr-12 text-sm text-slate-800 placeholder-slate-400
-                    focus:bg-white focus:border-teal-500 focus:ring-1 focus:ring-teal-500/30 focus:outline-none transition"
+                    focus:bg-white focus:border-[#f7b464] focus:ring-1 focus:ring-[#f7b464]/30 focus:outline-none transition"
                 />
                 <button type="button" onClick={() => setShowPass(!showPass)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
@@ -135,7 +135,7 @@ export default function RegisterPage() {
                 onChange={handleChange}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50
                   px-4 py-3 text-sm text-slate-800 placeholder-slate-400
-                  focus:bg-white focus:border-teal-500 focus:ring-1 focus:ring-teal-500/30 focus:outline-none transition"
+                  focus:bg-white focus:border-[#f7b464] focus:ring-1 focus:ring-[#f7b464]/30 focus:outline-none transition"
               />
             </div>
 
@@ -146,7 +146,7 @@ export default function RegisterPage() {
                   {[1,2,3,4].map(i => (
                     <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 ${
                       form.password.length >= i * 3
-                        ? i <= 1 ? 'bg-red-500' : i <= 2 ? 'bg-orange-500' : i <= 3 ? 'bg-yellow-500' : 'bg-emerald-500'
+                        ? i <= 1 ? 'bg-red-500' : i <= 2 ? 'bg-orange-500' : i <= 3 ? 'bg-yellow-500' : 'bg-slate-500'
                         : 'bg-slate-200'
                     }`} />
                   ))}
@@ -162,9 +162,9 @@ export default function RegisterPage() {
               disabled={loading}
               onClick={handleSubmit}
               className={`w-full py-3.5 rounded-xl text-sm font-bold tracking-wide
-                bg-gradient-to-r from-teal-650 to-emerald-650 bg-gradient-to-r from-teal-600 to-emerald-600
-                hover:from-teal-500 hover:to-emerald-500
-                text-white shadow-lg shadow-teal-500/20
+                bg-gradient-to-r from-[#f7b464] to-[#8ba8be]
+                hover:from-[#e5a353] hover:to-[#7a96ab]
+                text-white shadow-lg shadow-[#f7b464]/20
                 transition-all duration-200 cursor-pointer
                 flex items-center justify-center gap-2
                 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
@@ -181,7 +181,7 @@ export default function RegisterPage() {
 
           <div className="px-7 pb-6 text-center text-xs text-slate-500">
             Sudah punya akun?{' '}
-            <Link to="/login" className="text-teal-600 hover:text-teal-700 font-bold transition">
+            <Link to="/login" className="text-[#d97706] hover:text-amber-800 font-bold transition">
               Masuk di sini
             </Link>
           </div>

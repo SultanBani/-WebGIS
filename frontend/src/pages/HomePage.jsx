@@ -104,15 +104,15 @@ export default function HomePage() {
   const toggleLayer = (key) => setLayers(p => ({ ...p, [key]: !p[key] }));
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#f4f6f5] pt-16">
+    <div className="flex h-screen w-screen overflow-hidden bg-gradient-to-br from-[#8ba8be] via-[#e2c7a7] to-[#f7b464] pt-16">
 
       {/* ── SIDEBAR ───────────────────────────────────────────────── */}
-      <aside className="z-10 flex w-96 shrink-0 flex-col border-r border-slate-200
-        bg-white/95 backdrop-blur-md shadow-2xl overflow-hidden">
+      <aside className="z-10 flex w-96 max-w-96 shrink-0 flex-col border-r border-slate-200
+        bg-white/95 backdrop-blur-md shadow-2xl overflow-y-auto overflow-x-hidden custom-scrollbar">
 
         {/* Stats bar */}
         <div className="p-4 border-b border-slate-100 space-y-3">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-emerald-700">
+          <h2 className="text-xs font-bold uppercase tracking-widest text-[#d97706]">
             Statistik Bencana
           </h2>
           <div className="grid grid-cols-4 gap-2">
@@ -132,8 +132,8 @@ export default function HomePage() {
           {/* CTA laporan */}
           <Link to="/laporan"
             className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl
-              bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500
-              text-white text-xs font-bold shadow-md shadow-emerald-600/10 transition-all">
+              bg-gradient-to-r from-[#8ba8be] to-[#f7b464] hover:from-[#7a96ab] hover:to-[#e5a353]
+              text-white text-xs font-bold shadow-md shadow-[#8ba8be]/10 transition-all">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
             </svg>
@@ -143,10 +143,10 @@ export default function HomePage() {
 
         {/* Layer controls */}
         <div className="p-4 border-b border-slate-100">
-          <h3 className="text-xs font-bold uppercase tracking-widest text-emerald-700 mb-3">Kontrol Layer</h3>
+          <h3 className="text-xs font-bold uppercase tracking-widest text-[#d97706] mb-3">Kontrol Layer</h3>
           <div className="space-y-1.5">
             {[
-              { key: 'tnbbs', label: 'Batas TNBBS', dot: 'bg-emerald-500' },
+              { key: 'tnbbs', label: 'Batas TNBBS', dot: 'bg-slate-500' },
               { key: 'zonasi', label: 'Zonasi Rawan', dot: 'bg-gradient-to-r from-red-500 to-green-500' },
               { key: 'historis', label: 'Titik Historis', dot: 'bg-red-500' },
               { key: 'posko', label: 'Posko & Fasilitas', dot: 'bg-blue-500' },
@@ -160,17 +160,17 @@ export default function HomePage() {
                 </span>
                 <input type="checkbox" checked={layers[l.key]}
                   onChange={() => toggleLayer(l.key)}
-                  className="accent-emerald-600 h-4 w-4" />
+                  className="accent-[#8ba8be] h-4 w-4" />
               </label>
             ))}
           </div>
         </div>
 
         {/* Daftar historis */}
-        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-3">
+        <div className="p-4 space-y-3 mb-10">
           <div className="flex justify-between items-center">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-emerald-700 font-bold">Titik Historis</h3>
-            <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-0.5 rounded-full font-semibold font-semibold">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-[#d97706] font-bold">Titik Historis</h3>
+            <span className="text-[10px] bg-slate-50 text-[#d97706] border border-slate-200 px-2 py-0.5 rounded-full font-semibold font-semibold">
               {filtered.length} lokasi
             </span>
           </div>
@@ -179,11 +179,11 @@ export default function HomePage() {
             value={search} onChange={e => setSearch(e.target.value)}
             className="w-full rounded-lg border border-slate-200 bg-slate-50
               px-3 py-2 text-xs text-slate-800 placeholder-slate-400
-              focus:bg-white focus:border-emerald-500 focus:outline-none"
+              focus:bg-white focus:border-[#8ba8be] focus:outline-none"
           />
           {loading ? (
             <div className="flex justify-center py-8">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#8ba8be] border-t-transparent" />
             </div>
           ) : filtered.map(f => {
             const sel = activePoint?.properties?.id === f.properties.id;
@@ -194,7 +194,7 @@ export default function HomePage() {
               <div key={f.properties.id}
                 onClick={() => setActivePoint(f)}
                 className={`cursor-pointer rounded-xl border p-3 transition-all duration-200
-                  ${sel ? 'border-emerald-500 bg-emerald-50/60 shadow-sm scale-[1.01]'
+                  ${sel ? 'border-[#8ba8be] bg-slate-50/60 shadow-sm scale-[1.01]'
                     : 'border-slate-100 bg-white hover:bg-slate-50/80 hover:border-slate-200'}`}>
                 <div className={`h-0.5 w-8 rounded-full mb-2
                   ${clr === 'red' ? 'bg-red-500' : clr === 'orange' ? 'bg-orange-500' : 'bg-yellow-500'}`} />
@@ -231,7 +231,7 @@ export default function HomePage() {
           {/* TNBBS border */}
           {layers.tnbbs && (
             <Polygon positions={tnbbsPolygon}
-              pathOptions={{ color: '#10b981', fillColor: 'transparent', weight: 2.5, dashArray: '6 4' }} />
+              pathOptions={{ color: '#f7b464', fillColor: 'transparent', weight: 2.5, dashArray: '6 4' }} />
           )}
 
           {/* Zonasi */}
@@ -313,7 +313,7 @@ export default function HomePage() {
                 onClick={() => setMapStyle(k)}
                 className={`rounded-lg px-2.5 py-1 text-[11px] font-bold cursor-pointer transition duration-150 ${
                   mapStyle === k
-                    ? 'bg-emerald-600 text-white shadow shadow-emerald-800/30'
+                    ? 'bg-[#7a96ab] text-white shadow shadow-slate-800/30'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 }`}
               >
@@ -327,7 +327,7 @@ export default function HomePage() {
         <div className="absolute bottom-4 right-4 z-[1000]
           bg-white/90 backdrop-blur-sm border border-slate-200
           rounded-xl p-3 shadow-xl space-y-1.5 text-[10px] text-slate-600 min-w-[140px]">
-          <div className="font-bold text-xs text-emerald-700 mb-2">Legenda</div>
+          <div className="font-bold text-xs text-[#d97706] mb-2">Legenda</div>
           {[
             { color: 'bg-red-500', label: 'Zona Tinggi' },
             { color: 'bg-orange-500', label: 'Zona Sedang' },
