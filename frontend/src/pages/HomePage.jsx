@@ -66,6 +66,8 @@ export default function HomePage() {
   const [search, setSearch] = useState('');
   const [layers, setLayers] = useState({ tnbbs: true, zonasi: true, historis: true, posko: true, laporan: true });
   const [mapStyle, setMapStyle] = useState('satellite');
+  const [showMapStyle, setShowMapStyle] = useState(window.innerWidth >= 768);
+  const [showLegend, setShowLegend] = useState(window.innerWidth >= 768);
 
   const tileLayers = {
     satellite: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
@@ -300,56 +302,76 @@ export default function HomePage() {
         </MapContainer>
 
         {/* Floating Map Style Switcher (Satellite / Topography / Streets) */}
-        <div className="absolute bottom-4 left-4 z-[1000] flex flex-col gap-1 rounded-xl bg-white/90 border border-slate-200 p-2.5 shadow-xl backdrop-blur-md">
-          <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 px-1.5 font-semibold">Tipe Peta (Base Map)</span>
-          <div className="flex gap-1">
-            {[
-              ['satellite', 'Satelit'],
-              ['topography', 'Topo'],
-              ['streets', 'Jalan']
-            ].map(([k, lb]) => (
-              <button
-                key={k}
-                onClick={() => setMapStyle(k)}
-                className={`rounded-lg px-2.5 py-1 text-[11px] font-bold cursor-pointer transition duration-150 ${
-                  mapStyle === k
-                    ? 'bg-[#7a96ab] text-white shadow shadow-slate-800/30'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                }`}
-              >
-                {lb}
-              </button>
-            ))}
-          </div>
+        <div className="absolute bottom-4 left-4 z-[1000] flex flex-col gap-2">
+          {showMapStyle && (
+            <div className="rounded-xl bg-white/90 border border-slate-200 p-2.5 shadow-xl backdrop-blur-md animate-in slide-in-from-bottom-2 fade-in duration-200">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 px-1.5 font-semibold">Tipe Peta (Base Map)</span>
+              <div className="flex gap-1 mt-1.5">
+                {[
+                  ['satellite', 'Satelit'],
+                  ['topography', 'Topo'],
+                  ['streets', 'Jalan']
+                ].map(([k, lb]) => (
+                  <button
+                    key={k}
+                    onClick={() => setMapStyle(k)}
+                    className={`rounded-lg px-2.5 py-1 text-[11px] font-bold cursor-pointer transition duration-150 ${
+                      mapStyle === k
+                        ? 'bg-[#7a96ab] text-white shadow shadow-slate-800/30'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    }`}
+                  >
+                    {lb}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          <button 
+            onClick={() => setShowMapStyle(!showMapStyle)}
+            className="w-10 h-10 bg-white/90 backdrop-blur-md border border-slate-200 rounded-xl shadow-lg flex items-center justify-center text-slate-700 hover:bg-slate-50 transition"
+            title="Ubah Tipe Peta"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+          </button>
         </div>
 
         {/* Legend overlay */}
-        <div className="absolute bottom-4 right-4 z-[1000]
-          bg-white/90 backdrop-blur-sm border border-slate-200
-          rounded-xl p-3 shadow-xl space-y-1.5 text-[10px] text-slate-600 min-w-[140px]">
-          <div className="font-bold text-xs text-[#d97706] mb-2">Legenda</div>
-          {[
-            { color: 'bg-red-500', label: 'Zona Tinggi' },
-            { color: 'bg-orange-500', label: 'Zona Sedang' },
-            { color: 'bg-yellow-500', label: 'Zona Rendah' },
-            { color: 'bg-green-500', label: 'Zona Aman' },
-          ].map(l => (
-            <div key={l.label} className="flex items-center gap-2">
-              <span className={`w-3 h-3 rounded-sm ${l.color} opacity-70`} />
-              {l.label}
+        <div className="absolute bottom-4 right-4 z-[1000] flex flex-col items-end gap-2">
+          {showLegend && (
+            <div className="bg-white/90 backdrop-blur-sm border border-slate-200 rounded-xl p-3 shadow-xl space-y-1.5 text-[10px] text-slate-600 min-w-[140px] animate-in slide-in-from-bottom-2 fade-in duration-200">
+              <div className="font-bold text-xs text-[#d97706] mb-2">Legenda</div>
+              {[
+                { color: 'bg-red-500', label: 'Zona Tinggi' },
+                { color: 'bg-orange-500', label: 'Zona Sedang' },
+                { color: 'bg-yellow-500', label: 'Zona Rendah' },
+                { color: 'bg-green-500', label: 'Zona Aman' },
+              ].map(l => (
+                <div key={l.label} className="flex items-center gap-2">
+                  <span className={`w-3 h-3 rounded-sm ${l.color} opacity-70`} />
+                  {l.label}
+                </div>
+              ))}
+              <div className="border-t border-slate-200 pt-1.5 mt-1 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-red-500 font-bold text-base leading-none">▲</span> Historis
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-blue-500" /> Posko
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-amber-500" /> Laporan
+                </div>
+              </div>
             </div>
-          ))}
-          <div className="border-t border-slate-200 pt-1.5 mt-1 space-y-1.5">
-            <div className="flex items-center gap-2">
-              <span className="text-red-500 font-bold text-base leading-none">▲</span> Historis
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-blue-500" /> Posko
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-amber-500" /> Laporan
-            </div>
-          </div>
+          )}
+          <button 
+            onClick={() => setShowLegend(!showLegend)}
+            className="w-10 h-10 bg-white/90 backdrop-blur-md border border-slate-200 rounded-xl shadow-lg flex items-center justify-center text-slate-700 hover:bg-slate-50 transition"
+            title="Lihat Legenda"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          </button>
         </div>
       </div>
     </div>
