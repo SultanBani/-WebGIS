@@ -29,4 +29,4 @@ RUN composer install --no-interaction --optimize-autoloader --ignore-platform-re
 EXPOSE 8000
 
 # Perintah untuk menyalakan Laravel
-CMD php artisan serve --host=0.0.0.0 --port=${PORT:-8000}
+CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]
