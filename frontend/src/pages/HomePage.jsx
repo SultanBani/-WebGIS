@@ -104,11 +104,11 @@ export default function HomePage() {
   const toggleLayer = (key) => setLayers(p => ({ ...p, [key]: !p[key] }));
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-gradient-to-br from-[#8ba8be] via-[#e2c7a7] to-[#f7b464] pt-16">
+    <div className="flex flex-col-reverse md:flex-row h-screen w-screen overflow-hidden bg-gradient-to-br from-[#8ba8be] via-[#e2c7a7] to-[#f7b464] pt-16">
 
       {/* ── SIDEBAR ───────────────────────────────────────────────── */}
-      <aside className="z-10 flex w-96 max-w-96 shrink-0 flex-col border-r border-slate-200
-        bg-white/95 backdrop-blur-md shadow-2xl overflow-y-auto overflow-x-hidden custom-scrollbar">
+      <aside className="z-10 flex w-full md:w-96 md:max-w-96 shrink-0 flex-col border-t md:border-t-0 md:border-r border-slate-200
+        bg-white/95 backdrop-blur-md shadow-2xl overflow-y-auto overflow-x-hidden custom-scrollbar max-h-[45vh] md:max-h-none">
 
         {/* Stats bar */}
         <div className="p-4 border-b border-slate-100 space-y-3">
@@ -220,7 +220,7 @@ export default function HomePage() {
       </aside>
 
       {/* ── MAP ───────────────────────────────────────────────────── */}
-      <div className="flex-1 relative">
+      <div className="flex-1 relative min-h-[50vh] md:min-h-0">
         <MapContainer
           center={[-5.1050, 104.0700]} zoom={11}
           style={{ width: '100%', height: '100%' }}
