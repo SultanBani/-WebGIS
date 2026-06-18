@@ -44,7 +44,7 @@ export default function LaporanPage() {
       payload.append('tanggal_kejadian', form.tanggal_kejadian);
       if (fotoFile) payload.append('foto_bukti', fotoFile);
 
-      const res = await fetch('http://localhost:8000/api/laporan-warga', { method: 'POST', body: payload });
+      const res = await fetch('https://webgis-production-93ef.up.railway.app/api/laporan-warga', { method: 'POST', body: payload });
       const data = await res.json();
       if (res.ok) {
         setMessage({ type: 'success', text: 'Laporan berhasil terkirim! Menunggu validasi.' });

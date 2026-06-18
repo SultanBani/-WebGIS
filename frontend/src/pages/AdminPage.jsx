@@ -13,7 +13,7 @@ export default function AdminPage() {
 
   const load = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/laporan-warga?all=true');
+      const res = await fetch('https://webgis-production-93ef.up.railway.app/api/laporan-warga?all=true');
       const data = await res.json();
       setLaporan(data);
     } catch { showToast('Gagal memuat data.', 'error'); }
@@ -24,7 +24,7 @@ export default function AdminPage() {
 
   const handleValidate = async (id) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/laporan-warga/${id}/validate`, { method: 'PATCH' });
+      const res = await fetch(`https://webgis-production-93ef.up.railway.app/api/laporan-warga/${id}/validate`, { method: 'PATCH' });
       if (res.ok) { showToast('Laporan berhasil divalidasi.'); load(); }
     } catch { showToast('Gagal memvalidasi.', 'error'); }
   };
@@ -32,7 +32,7 @@ export default function AdminPage() {
   const handleDelete = async (id) => {
     if (!confirm('Hapus laporan ini?')) return;
     try {
-      const res = await fetch(`http://localhost:8000/api/laporan-warga/${id}`, { method: 'DELETE' });
+      const res = await fetch(`https://webgis-production-93ef.up.railway.app/api/laporan-warga/${id}`, { method: 'DELETE' });
       if (res.ok) { showToast('Laporan dihapus.'); load(); }
     } catch { showToast('Gagal menghapus.', 'error'); }
   };

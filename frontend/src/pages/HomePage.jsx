@@ -77,9 +77,9 @@ export default function HomePage() {
     const load = async () => {
       try {
         const [rH, rZ, rL] = await Promise.all([
-          fetch('http://localhost:8000/api/titik-longsor'),
-          fetch('http://localhost:8000/api/zonasi-rawan'),
-          fetch('http://localhost:8000/api/laporan-warga'),
+          fetch('https://webgis-production-93ef.up.railway.app/api/titik-longsor'),
+          fetch('https://webgis-production-93ef.up.railway.app/api/zonasi-rawan'),
+          fetch('https://webgis-production-93ef.up.railway.app/api/laporan-warga'),
         ]);
         setHistoris(await rH.json());
         setZonasi(await rZ.json());
